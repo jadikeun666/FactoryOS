@@ -5,33 +5,30 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Schedule extends Model
+class InventoryTransaction extends Model
 {
     use HasFactory;
 
     public $timestamps = false; // immutable, hanya created_at
 
     protected $fillable = [
-        'algorithm', 'makespan_minutes', 'total_tardiness_minutes',
-        'late_wo_count', 'mean_flow_time_minutes', 'scheduled_from', 'created_by',
+        'material_id', 'type', 'qty', 'unit_cost',
+        'reference_type', 'reference_id', 'notes', 'created_by',
     ];
 
     protected $casts = [
-        'scheduled_from' => 'datetime',
+        'qty' => 'decimal:4',
+        'unit_cost' => 'decimal:4',
         'created_at' => 'datetime',
     ];
 
-    public function assignments()
+    public function material()
     {
-        return $this->hasMany(ScheduleAssignment::class);
+        return $this->belongsTo(Material::class);
     }
 
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
-    }
-    public function mrpRuns()
-    {
-        return $this->hasMany(MrpRun::class);
     }
 }

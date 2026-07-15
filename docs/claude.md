@@ -63,14 +63,53 @@ npx soketi start
 > **Update bagian ini setiap sesi sebelum mulai kerja.**
 
 ### ✅ Done
-- (belum ada — project baru)
+- Laravel 11 + Breeze (Blade stack) + PostgreSQL 16 terkonfigurasi
+- Migration lengkap 17 tabel custom (5 master data + 4 Engine 1 + 4 Engine 2 + 6 Engine 3, 
+  sesuai docs/database.md)
+- 19 Eloquent Models dengan relationship lengkap (belongsTo/hasMany antar semua entity)
+- Database seeder jalan: 2 shift, 5 work center, 10 material, 3 product 
+  (dengan BOM & routing acak), 15 work order
+- Kolom `users.role` ditambahkan (ENUM: admin, production_manager, ppic, operator) 
+  + method isAdmin()/isProductionManager()/isPpic()/isOperator() di User model
+- **Engine 1 — Job Shop Scheduler (SELESAI & teruji)**:
+  - `SchedulingAlgorithmInterface` + 4 algoritma (SptAlgorithm, EddAlgorithm, 
+    CrAlgorithm, FifoAlgorithm) — semua pakai bcmath, score dalam string
+  - `JobShopSchedulerService` (run, compareAll, computeMetrics) — precedence 
+    antar-operasi, kontensi mesin, dan metrik (makespan, tardiness, flow time) 
+    tervalidasi manual terhadap walkthrough di docs/scheduling.md
+  - `SchedulingException` — guard circular dependency / data tidak konsisten
+  - `WoOperationGeneratorService` — generate wo_operations dari routing produk, 
+    dengan idempotent-guard dan opsi force-regenerate
+  - `WorkOrderOperationGenerationException`, `WorkOrderStatusException`
+  - `WorkOrderStatusService` — validasi transisi status WO (draft→scheduled→
+    in_progress→done/late) dan guard penghapusan (FR-02)
+  - `WorkOrderController` (thin controller) — CRUD, generate operations saat 
+    store, transisi status, regenerate operations manual
+  - `StoreWorkOrderRequest`, `UpdateWorkOrderRequest`, `UpdateWorkOrderStatusRequest`
+  - `WorkOrderPolicy` — update/delete hanya creator atau admin
+  - Route `work-orders.*` (resource + update-status + regenerate-operations) 
+    ter-register di routes/web.php
+  - **21 test PASS (56 assertions)**: 4 test class unit algoritma + 1 feature 
+    test JobShopSchedulerService (replikasi walkthrough 2 mesin/3 WO, compareAll, 
+    circular dependency guard, computeMetrics)
+  - Tervalidasi manual di tinker: multi-WO dengan kontensi mesin nyata 
+    (3 WO rebutan 1 work center) — SPT/FIFO vs EDD/CR menghasilkan urutan 
+    berbeda sesuai kriteria masing-masing algoritma
 
 ### 🔄 In Progress
-- Setup & scaffolding awal
+- (belum ada — siap mulai task baru)
 
 ### ⏳ Not Started
-- Semua fitur (lihat Roadmap)
-
+- `GanttBuilderService` (transform Schedule → JSON untuk D3.js, sesuai docs/gantt.md)
+- Halaman Vue/Inertia `WorkOrders/{Index,Create,Show,Edit}.vue` — controller 
+  sudah render Inertia::render(...) tapi file .vue belum ada, jadi belum bisa 
+  diakses lewat browser
+- Phase 3 — Engine 2 (OEE & Downtime): OeeCalculatorService, 
+  ProductionLogObserver, RecalculateOeeJob, Soketi broadcast, dashboard live
+- Phase 4 — Engine 3 (Inventory/MRP): EoqCalculatorService, MrpService, 
+  CheckReorderAlertsJob
+- Phase 5 — Integration & Export: Dashboard KPI lintas 3 engine, 
+  ExportService (PDF/Excel)
 ---
 
 ## Arsitektur Tiga Engine

@@ -25,7 +25,16 @@ class WorkCenter extends Model
         return $this->hasMany(Routing::class);
     }
     public function woOperations()
-{
-    return $this->hasMany(WoOperation::class);
-}
+    {
+        return $this->hasMany(WoOperation::class);
+    }
+    public function productionLogs()
+    {
+        return $this->hasMany(ProductionLog::class);
+    }
+
+    public function oeeSnapshots()
+    {
+        return $this->hasMany(OeeSnapshot::class);
+    }
 }

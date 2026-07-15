@@ -19,4 +19,23 @@ class Material extends Model
     {
         return $this->hasMany(BillOfMaterial::class);
     }
+    public function inventory()
+    {
+        return $this->hasOne(Inventory::class);
+    }
+
+    public function inventoryTransactions()
+    {
+        return $this->hasMany(InventoryTransaction::class);
+    }
+
+    public function inventoryParam()
+    {
+        return $this->hasOne(InventoryParam::class);
+    }
+
+    public function reorderAlerts()
+    {
+        return $this->hasMany(ReorderAlert::class);
+    }
 }
