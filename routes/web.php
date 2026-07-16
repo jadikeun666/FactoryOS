@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WorkOrderController;
+use App\Http\Controllers\ScheduleController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -24,6 +25,11 @@ Route::middleware('auth')->group(function () {
         ->name('work-orders.update-status');
     Route::post('work-orders/{workOrder}/regenerate-operations', [WorkOrderController::class, 'regenerateOperations'])
         ->name('work-orders.regenerate-operations');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::post('/schedules/apply', [ScheduleController::class, 'apply'])
+        ->name('schedules.apply');
 });
 
 require __DIR__.'/auth.php';

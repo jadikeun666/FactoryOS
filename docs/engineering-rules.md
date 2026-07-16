@@ -169,7 +169,7 @@ class EoqCalculatorServiceTest extends TestCase {
     {
         // Data dari docs/oee-formulas.md contoh perhitungan
         // Availability = 0.875, Performance = 0.904762, Quality = 0.973684
-        // OEE = 0.771099
+        // OEE = 0.770833
         ...
     }
 }

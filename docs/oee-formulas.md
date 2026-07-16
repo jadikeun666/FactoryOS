@@ -143,7 +143,7 @@ Performance = 0.904762  (90.5%, tidak di-cap karena < 1.0)
 Quality = 370 / 380 = 0.973684  (97.4%)
 
 OEE = 0.875000 × 0.904762 × 0.973684
-    = 0.771099  (77.1%)
+    = 0.770833  (77.1%)
     → Typical range, ada ruang perbaikan di Availability
 ```
 
