@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Policies;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use App\Models\User;
 use App\Models\WorkCenter;
 use App\Policies\WorkCenterPolicy;
@@ -20,7 +22,7 @@ class WorkCenterPolicyTest extends TestCase
         $this->policy = new WorkCenterPolicy();
     }
 
-    /** @test */
+    #[Test]
     public function any_authenticated_user_can_view_work_center(): void
     {
         $user = User::factory()->create(['role' => 'operator']);
@@ -29,7 +31,7 @@ class WorkCenterPolicyTest extends TestCase
         $this->assertTrue($this->policy->view($user, $workCenter));
     }
 
-    /** @test */
+    #[Test]
     public function only_admin_can_update_work_center(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
@@ -40,7 +42,7 @@ class WorkCenterPolicyTest extends TestCase
         $this->assertFalse($this->policy->update($ppic, $workCenter));
     }
 
-    /** @test */
+    #[Test]
     public function only_admin_can_delete_work_center(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Services\OEE;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use App\Models\DowntimeEvent;
 use App\Models\ProductionLog;
 use App\Models\Shift;
@@ -43,7 +45,7 @@ class DowntimeAnalysisServiceTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_computes_pareto_downtime_correctly(): void
     {
         // Data mengikuti contoh di docs/oee-formulas.md § Pareto Analysis Downtime
@@ -83,7 +85,7 @@ class DowntimeAnalysisServiceTest extends TestCase
         $this->assertEqualsWithDelta(100.0, $lastCumulative, 0.01);
     }
 
-    /** @test */
+    #[Test]
     public function it_filters_by_work_center_when_provided(): void
     {
         $wc1 = WorkCenter::factory()->create();
@@ -107,7 +109,7 @@ class DowntimeAnalysisServiceTest extends TestCase
         $this->assertEquals('100.000000', $result[0]['percentage']);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_empty_array_when_no_downtime_in_range(): void
     {
         $wc = WorkCenter::factory()->create();
@@ -123,7 +125,7 @@ class DowntimeAnalysisServiceTest extends TestCase
         $this->assertSame([], $result);
     }
 
-    /** @test */
+    #[Test]
     public function it_excludes_downtime_outside_date_range(): void
     {
         $wc = WorkCenter::factory()->create();

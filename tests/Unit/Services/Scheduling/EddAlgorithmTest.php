@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Services\Scheduling;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use App\Services\Scheduling\Algorithms\EddAlgorithm;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,7 +27,7 @@ class EddAlgorithmTest extends TestCase
         $this->algorithm = new EddAlgorithm();
     }
 
-    /** @test */
+    #[Test]
     public function it_scores_operation_as_due_date_timestamp(): void
     {
         $wc = $this->makeWorkCenter('M01');
@@ -41,7 +43,7 @@ class EddAlgorithmTest extends TestCase
         $this->assertSame((string) Carbon::parse($wo->due_date)->timestamp, $score);
     }
 
-    /** @test */
+    #[Test]
     public function it_ranks_earlier_due_date_with_smaller_score(): void
     {
         $wc = $this->makeWorkCenter('M02');
@@ -64,7 +66,7 @@ class EddAlgorithmTest extends TestCase
         $this->assertTrue(bccomp($scoreA, $scoreB, 6) < 0, 'WO dengan due date lebih awal harus punya score lebih kecil.');
     }
 
-    /** @test */
+    #[Test]
     public function code_returns_edd(): void
     {
         $this->assertSame('edd', $this->algorithm->code());

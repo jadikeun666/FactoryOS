@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Jobs;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use App\Events\OeeUpdated;
 use App\Jobs\RecalculateOeeJob;
 use App\Models\ProductionLog;
@@ -17,7 +19,7 @@ class RecalculateOeeJobTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function handling_the_job_computes_snapshot_and_broadcasts_oee_updated(): void
     {
         // Cegah ProductionLogObserver ikut mendispatch job ini duluan saat factory create()

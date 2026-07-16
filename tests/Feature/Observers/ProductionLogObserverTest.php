@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Observers;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use App\Events\ProductionLogSaved;
 use App\Jobs\RecalculateOeeJob;
 use App\Models\ProductionLog;
@@ -25,7 +27,7 @@ class ProductionLogObserverTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_dispatches_production_log_saved_when_log_is_created(): void
     {
         Event::fake([ProductionLogSaved::class]);
@@ -37,7 +39,7 @@ class ProductionLogObserverTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_dispatches_production_log_saved_when_unvalidated_log_is_updated(): void
     {
         $log = ProductionLog::factory()->create([
@@ -53,7 +55,7 @@ class ProductionLogObserverTest extends TestCase
         });
     }
 
-    /** @test */
+    #[Test]
     public function it_does_not_dispatch_when_validated_log_is_updated(): void
     {
         $log = ProductionLog::factory()->create([
@@ -67,7 +69,7 @@ class ProductionLogObserverTest extends TestCase
         Event::assertNotDispatched(ProductionLogSaved::class);
     }
 
-    /** @test */
+    #[Test]
     public function saving_a_log_ultimately_queues_recalculate_oee_job(): void
     {
         // Tidak fake Event di sini — biarkan listener sungguhan jalan

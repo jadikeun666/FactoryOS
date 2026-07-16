@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Services;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use App\Models\Schedule;
 use App\Models\ScheduleAssignment;
 use App\Services\Scheduling\GanttBuilderService;
@@ -23,7 +25,7 @@ class GanttBuilderServiceTest extends TestCase
         $this->service = $this->app->make(GanttBuilderService::class);
     }
 
-    /** @test */
+    #[Test]
     public function it_builds_gantt_structure_matching_docs_format(): void
     {
         $workCenter = $this->makeWorkCenter('M01');
@@ -100,7 +102,7 @@ class GanttBuilderServiceTest extends TestCase
         $this->assertFalse($assignment['is_late']);
     }
 
-    /** @test */
+    #[Test]
     public function it_marks_work_order_and_assignment_as_late_when_planned_end_exceeds_due_date(): void
     {
         $workCenter = $this->makeWorkCenter('M02');

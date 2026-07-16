@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Services\Scheduling;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use App\Services\Scheduling\Algorithms\CrAlgorithm;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,7 +28,7 @@ class CrAlgorithmTest extends TestCase
         $this->algorithm = new CrAlgorithm();
     }
 
-    /** @test */
+    #[Test]
     public function it_computes_critical_ratio_correctly(): void
     {
         $wc = $this->makeWorkCenter('M01');
@@ -50,7 +52,7 @@ class CrAlgorithmTest extends TestCase
         $this->assertSame('2.000000', $score);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_zero_when_remaining_processing_time_is_zero(): void
     {
         $wc = $this->makeWorkCenter('M02');
@@ -70,7 +72,7 @@ class CrAlgorithmTest extends TestCase
         $this->assertSame('0.000000', $score);
     }
 
-    /** @test */
+    #[Test]
     public function it_treats_missing_work_order_in_remaining_map_as_zero_denominator(): void
     {
         $wc = $this->makeWorkCenter('M03');
@@ -87,7 +89,7 @@ class CrAlgorithmTest extends TestCase
         $this->assertSame('0.000000', $score);
     }
 
-    /** @test */
+    #[Test]
     public function it_ranks_more_critical_work_order_with_smaller_score(): void
     {
         $wc = $this->makeWorkCenter('M04');
@@ -118,7 +120,7 @@ class CrAlgorithmTest extends TestCase
         $this->assertTrue(bccomp($scoreA, $scoreB, 6) < 0, 'WO yang lebih kritis (CR kecil) harus diprioritaskan.');
     }
 
-    /** @test */
+    #[Test]
     public function code_returns_cr(): void
     {
         $this->assertSame('cr', $this->algorithm->code());

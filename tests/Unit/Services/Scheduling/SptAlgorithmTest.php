@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Services\Scheduling;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use App\Services\Scheduling\Algorithms\SptAlgorithm;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,7 +27,7 @@ class SptAlgorithmTest extends TestCase
         $this->algorithm = new SptAlgorithm();
     }
 
-    /** @test */
+    #[Test]
     public function it_scores_operation_as_process_time_plus_setup_time(): void
     {
         $wc = $this->makeWorkCenter('M01');
@@ -40,7 +42,7 @@ class SptAlgorithmTest extends TestCase
         $this->assertSame('70.000000', $score);
     }
 
-    /** @test */
+    #[Test]
     public function it_ranks_shorter_operation_with_smaller_score(): void
     {
         $wc = $this->makeWorkCenter('M02');
@@ -59,7 +61,7 @@ class SptAlgorithmTest extends TestCase
         $this->assertTrue(bccomp($shortScore, $longScore, 6) < 0, 'Operasi dengan durasi lebih pendek harus punya score lebih kecil (prioritas lebih tinggi).');
     }
 
-    /** @test */
+    #[Test]
     public function code_returns_spt(): void
     {
         $this->assertSame('spt', $this->algorithm->code());

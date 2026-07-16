@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Services\Scheduling;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use App\Exceptions\ScheduleApplyException;
 use App\Models\Schedule;
 use App\Models\ScheduleAssignment;
@@ -29,7 +31,7 @@ class ScheduleApplierServiceTest extends TestCase
         $this->service = $this->app->make(ScheduleApplierService::class);
     }
 
-    /** @test */
+    #[Test]
     public function it_applies_schedule_to_pending_operations_and_transitions_work_order_to_scheduled(): void
     {
         $workCenter = $this->makeWorkCenter('M01');
@@ -80,7 +82,7 @@ class ScheduleApplierServiceTest extends TestCase
         $this->assertEquals('scheduled', $workOrder->status);
     }
 
-    /** @test */
+    #[Test]
     public function it_skips_operations_that_are_no_longer_pending(): void
     {
         $workCenter = $this->makeWorkCenter('M02');
@@ -114,7 +116,7 @@ class ScheduleApplierServiceTest extends TestCase
         $this->service->apply($schedule->id);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_when_schedule_has_no_assignments(): void
     {
         $schedule = Schedule::create([
@@ -131,7 +133,7 @@ class ScheduleApplierServiceTest extends TestCase
         $this->service->apply($schedule->id);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_when_schedule_does_not_exist(): void
     {
         $this->expectException(ScheduleApplyException::class);

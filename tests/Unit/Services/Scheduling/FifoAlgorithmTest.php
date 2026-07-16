@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Services\Scheduling;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use App\Services\Scheduling\Algorithms\FifoAlgorithm;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,7 +27,7 @@ class FifoAlgorithmTest extends TestCase
         $this->algorithm = new FifoAlgorithm();
     }
 
-    /** @test */
+    #[Test]
     public function it_scores_operation_as_created_at_timestamp(): void
     {
         $wc = $this->makeWorkCenter('M01');
@@ -41,7 +43,7 @@ class FifoAlgorithmTest extends TestCase
         $this->assertSame((string) $createdAt->timestamp, $score);
     }
 
-    /** @test */
+    #[Test]
     public function it_ranks_earlier_created_work_order_with_smaller_score(): void
     {
         $wc = $this->makeWorkCenter('M02');
@@ -64,7 +66,7 @@ class FifoAlgorithmTest extends TestCase
         $this->assertTrue(bccomp($scoreA, $scoreB, 6) < 0, 'WO yang dibuat lebih awal harus punya score lebih kecil.');
     }
 
-    /** @test */
+    #[Test]
     public function code_returns_fifo(): void
     {
         $this->assertSame('fifo', $this->algorithm->code());

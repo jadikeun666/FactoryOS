@@ -4,6 +4,8 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WorkOrderController;
 use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\ProductionLogController;
+use App\Http\Controllers\DowntimeController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -30,6 +32,19 @@ Route::middleware('auth')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/schedules/apply', [ScheduleController::class, 'apply'])
         ->name('schedules.apply');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::resource('production-logs', ProductionLogController::class);
+    Route::patch('production-logs/{productionLog}/validate', [ProductionLogController::class, 'validateAction'])
+        ->name('production-logs.validate');
+
+    Route::post('production-logs/{productionLog}/downtime-events', [DowntimeController::class, 'store'])
+        ->name('production-logs.downtime-events.store');
+    Route::patch('production-logs/{productionLog}/downtime-events/{downtimeEvent}', [DowntimeController::class, 'update'])
+        ->name('production-logs.downtime-events.update');
+    Route::delete('production-logs/{productionLog}/downtime-events/{downtimeEvent}', [DowntimeController::class, 'destroy'])
+        ->name('production-logs.downtime-events.destroy');
 });
 
 require __DIR__.'/auth.php';

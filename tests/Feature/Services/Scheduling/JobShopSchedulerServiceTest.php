@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Services\Scheduling;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use App\Exceptions\SchedulingException;
 use App\Models\WoOperation;
 use App\Services\Scheduling\JobShopSchedulerService;
@@ -77,7 +79,7 @@ class JobShopSchedulerServiceTest extends TestCase
         $this->opC1 = $this->makeWoOperation($woC, $routingC1);
     }
 
-    /** @test */
+    #[Test]
     public function spt_run_follows_manual_walkthrough_from_docs(): void
     {
         $schedule = $this->service->run('spt', $this->startFrom);
@@ -125,7 +127,7 @@ class JobShopSchedulerServiceTest extends TestCase
         $this->assertSame(0, $schedule->late_wo_count);
     }
 
-    /** @test */
+    #[Test]
     public function edd_run_prioritizes_earliest_due_date_regardless_of_machine(): void
     {
         $schedule = $this->service->run('edd', $this->startFrom);
@@ -137,7 +139,7 @@ class JobShopSchedulerServiceTest extends TestCase
         $this->assertSame($this->opB1->id, $firstAssignment->wo_operation_id);
     }
 
-    /** @test */
+    #[Test]
     public function fifo_run_ignores_processing_time_and_due_date(): void
     {
         // FIFO murni berdasarkan created_at WO, tidak peduli durasi proses atau due date.
@@ -150,7 +152,7 @@ class JobShopSchedulerServiceTest extends TestCase
         $this->assertSame($this->opA1->id, $firstAssignment->wo_operation_id);
     }
 
-    /** @test */
+    #[Test]
     public function compare_all_runs_all_four_algorithms_and_returns_immutable_schedules(): void
     {
         $results = $this->service->compareAll($this->startFrom);
@@ -168,7 +170,7 @@ class JobShopSchedulerServiceTest extends TestCase
         $this->assertSame($scheduleIds->count(), $scheduleIds->unique()->count());
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_scheduling_exception_when_no_eligible_candidate_remains(): void
     {
         // Simulasikan data rusak: WoOperation dengan sequence = 2 TANPA sequence = 1
@@ -194,7 +196,7 @@ class JobShopSchedulerServiceTest extends TestCase
         $this->service->run('spt', $this->startFrom);
     }
 
-    /** @test */
+    #[Test]
     public function compute_metrics_calculates_tardiness_and_flow_time_correctly(): void
     {
         $product = $this->makeProduct('PRD-METRICS');
@@ -230,7 +232,7 @@ class JobShopSchedulerServiceTest extends TestCase
         $this->assertSame('600.00', $metrics['mean_flow_time_minutes']);
     }
 
-    /** @test */
+    #[Test]
     public function compute_metrics_returns_zeroed_result_for_empty_assignments(): void
     {
         $metrics = $this->service->computeMetrics([], \App\Models\WorkOrder::query()->whereRaw('1 = 0')->get());

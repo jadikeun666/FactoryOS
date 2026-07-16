@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Services\OEE;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use App\Exceptions\InvalidProductionLogException;
 use App\Models\ProductionLog;
 use App\Services\OEE\OeeCalculatorService;
@@ -40,7 +42,7 @@ class OeeCalculatorServiceTest extends TestCase
         $this->service = new OeeCalculatorService();
     }
 
-    /** @test */
+    #[Test]
     public function it_computes_oee_matching_manual_example(): void
     {
         $log = ProductionLog::factory()->create([
@@ -64,7 +66,7 @@ class OeeCalculatorServiceTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_caps_performance_at_one_when_output_exceeds_theoretical_max(): void
     {
         $log = ProductionLog::factory()->create([
@@ -80,7 +82,7 @@ class OeeCalculatorServiceTest extends TestCase
         $this->assertSame('1.000000', (string) $snapshot->performance);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_when_planned_minutes_is_zero(): void
     {
         $log = ProductionLog::factory()->create([
@@ -92,7 +94,7 @@ class OeeCalculatorServiceTest extends TestCase
         $this->service->compute($log);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_when_actual_output_is_zero(): void
     {
         $log = ProductionLog::factory()->create([
@@ -105,7 +107,7 @@ class OeeCalculatorServiceTest extends TestCase
         $this->service->compute($log);
     }
 
-    /** @test */
+    #[Test]
     public function it_throws_when_operating_time_is_zero(): void
     {
         $log = ProductionLog::factory()->create([

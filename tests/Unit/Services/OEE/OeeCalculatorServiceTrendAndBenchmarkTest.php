@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Services\OEE;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use App\Models\OeeSnapshot;
 use App\Models\Shift;
 use App\Models\WorkCenter;
@@ -36,7 +38,7 @@ class OeeCalculatorServiceTrendAndBenchmarkTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function it_averages_multiple_shifts_on_same_date(): void
     {
         $wc = WorkCenter::factory()->create();
@@ -56,7 +58,7 @@ class OeeCalculatorServiceTrendAndBenchmarkTest extends TestCase
         $this->assertSame('0.900000', $result[0]['availability']);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_one_row_per_date_ordered_ascending(): void
     {
         $wc = WorkCenter::factory()->create();
@@ -74,7 +76,7 @@ class OeeCalculatorServiceTrendAndBenchmarkTest extends TestCase
         $this->assertSame('2026-07-12', $result[2]['date']);
     }
 
-    /** @test */
+    #[Test]
     public function it_excludes_other_work_centers(): void
     {
         $wc1 = WorkCenter::factory()->create();
@@ -90,7 +92,7 @@ class OeeCalculatorServiceTrendAndBenchmarkTest extends TestCase
         $this->assertSame('0.900000', $result[0]['availability']);
     }
 
-    /** @test */
+    #[Test]
     public function it_returns_empty_array_when_no_snapshot_in_range(): void
     {
         $wc = WorkCenter::factory()->create();
@@ -100,7 +102,7 @@ class OeeCalculatorServiceTrendAndBenchmarkTest extends TestCase
         $this->assertSame([], $result);
     }
 
-    /** @test */
+    #[Test]
     public function it_computes_benchmark_gap_correctly(): void
     {
         $wc = WorkCenter::factory()->create();
@@ -125,7 +127,7 @@ class OeeCalculatorServiceTrendAndBenchmarkTest extends TestCase
         $this->assertSame('-0.026216', $result['quality']['gap']);
     }
 
-    /** @test */
+    #[Test]
     public function it_computes_positive_gap_when_actual_exceeds_world_class(): void
     {
         $wc = WorkCenter::factory()->create();

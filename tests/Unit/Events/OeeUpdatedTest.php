@@ -2,6 +2,8 @@
 
 namespace Tests\Unit\Events;
 
+use PHPUnit\Framework\Attributes\Test;
+
 use App\Events\OeeUpdated;
 use App\Models\OeeSnapshot;
 use App\Models\Shift;
@@ -19,7 +21,7 @@ class OeeUpdatedTest extends TestCase
 {
     use RefreshDatabase;
 
-    /** @test */
+    #[Test]
     public function it_broadcasts_on_correct_private_channel(): void
     {
         $workCenter = WorkCenter::factory()->create();
@@ -43,7 +45,7 @@ class OeeUpdatedTest extends TestCase
         $this->assertSame('private-work-center.' . $workCenter->id, $channels[0]->name);
     }
 
-    /** @test */
+    #[Test]
     public function it_broadcasts_as_oee_updated(): void
     {
         $workCenter = WorkCenter::factory()->create();
@@ -65,7 +67,7 @@ class OeeUpdatedTest extends TestCase
         $this->assertSame('oee.updated', $event->broadcastAs());
     }
 
-    /** @test */
+    #[Test]
     public function it_includes_expected_snapshot_fields_in_payload(): void
     {
         $workCenter = WorkCenter::factory()->create();
