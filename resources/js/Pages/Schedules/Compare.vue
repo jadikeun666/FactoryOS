@@ -111,9 +111,9 @@
 /**
  * ASUMSI (belum ada spesifikasi eksplisit di docs/ untuk halaman ini):
  * 1. Controller merender halaman ini via Inertia dengan props:
- *      results:  array hasil JobShopSchedulerService::compareAll(), satu
- *                object per algoritma — { algorithm, schedule_id,
- *                makespan_minutes, total_tardiness_minutes,
+ *      results:  array Schedule model (hasil JobShopSchedulerService::
+ *                compareAll()), satu per algoritma — attribute utama:
+ *                { id, algorithm, makespan_minutes, total_tardiness_minutes,
  *                late_wo_count, mean_flow_time_minutes }
  *      indexUrl: url kembali ke daftar Work Order / jadwal (opsional)
  * 2. "Terapkan Jadwal" POST ke route bernama `schedules.apply` dengan
@@ -193,7 +193,7 @@ function applySchedule() {
   if (!target) return
 
   isApplying.value = true
-  router.post('/schedules/apply', { schedule_id: target.schedule_id }, {
+  router.post('/schedules/apply', { schedule_id: target.id }, {
     onFinish: () => { isApplying.value = false },
   })
 }

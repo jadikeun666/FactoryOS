@@ -121,15 +121,41 @@ npx soketi start
     (3 WO rebutan 1 work center) — SPT/FIFO vs EDD/CR menghasilkan urutan
     berbeda sesuai kriteria masing-masing algoritma
 
-- **Engine 2 — OEE & Downtime Analytics (fondasi backend SELESAI & teruji;
-  dashboard/Pareto/trend/controller BELUM)**:
+- **Engine 2 — OEE & Downtime Analytics (backend SELESAI & teruji, termasuk
+  Pareto/trend/benchmark/controller; frontend Vue BELUM)**:
   - `OeeCalculatorService` (`app/Services/OEE/`) — hitung Availability,
     Performance (cap 1.0), Quality, OEE sesuai ISO 22400, bcmath scale 6.
     **PENTING**: bcmath native (`bcdiv`/`bcmul`) selalu truncate, bukan
     round — ditambahkan helper `round()` manual (round-half-up) di service
     ini supaya hasil match kalkulasi manual matematis biasa
+  - `OeeCalculatorService::trendData()` — rata-rata OEE harian per mesin
+    (multi-shift per tanggal), bcmath INTERNAL_SCALE=12 sebelum round ke
+    SCALE=6, whereDate() untuk filter rentang tanggal
+  - `OeeCalculatorService::benchmarkVsWorldClass()` — gap actual vs target
+    world class (OEE 85%, Availability 90%, Performance 95%, Quality 99.99%),
+    pakai helper `roundSigned()` baru (round half-up yang aware nilai negatif,
+    delegasi ke `round()` yang sudah ada — bukan reimplementasi)
   - `InvalidProductionLogException` — guard planned_minutes=0,
     actual_output=0, operating_time=0 (downtime = planned minutes)
+  - `DowntimeAnalysisService` (`app/Services/OEE/`, baru) — `paretoDowntime()`
+    sesuai docs/oee-formulas.md § Pareto Analysis Downtime. Dipisah dari
+    `OeeCalculatorService` karena beda domain (agregat cross-log vs
+    per-record OEE). Pakai `INTERNAL_SCALE = SCALE + 4` untuk presisi
+    bcdiv/bcmul sebelum round final, dan `cumulative` diakumulasi dari nilai
+    raw presisi tinggi (bukan dari hasil yang sudah dibulatkan) untuk
+    mencegah compounding rounding error antar baris
+  - `ProductionLogController` (thin, Inertia) — CRUD + `validateAction()`
+    (menandai `is_validated=true`, boleh oleh creator/admin/production_manager)
+  - `DowntimeController` (thin) — CRUD `downtime_events` dalam satu
+    `production_log`, otorisasi didelegasikan ke `ProductionLogPolicy::update()`
+    milik parent log (tidak ada Policy terpisah untuk DowntimeEvent)
+  - `ProductionLogPolicy` — update/delete ditolak jika `is_validated=true`;
+    `validateLog()` boleh oleh creator, admin, atau production_manager
+  - `StoreProductionLogRequest` (termasuk validasi nested `downtime_events.*`
+    untuk form gabungan sesuai US-07), `UpdateProductionLogRequest`,
+    `StoreDowntimeEventRequest`
+  - Route `production-logs.*` (resource + validate + downtime-events
+    nested store/update/destroy) ter-register di routes/web.php
   - `ProductionLogObserver` (`app/Observers/`) — dispatch `ProductionLogSaved`
     saat log dibuat, atau diupdate selama belum `is_validated`
   - `ProductionLogSaved` (event), `RecalculateOeeListener`,
@@ -154,18 +180,47 @@ npx soketi start
     contoh manual di docs/oee-formulas.md (planned=480, downtime=60,
     actual_output=380, good_output=370, ict=1.0) supaya reusable di test
     tanpa override
-  - **16 test PASS**: 5 unit `OeeCalculatorServiceTest` (termasuk cap
-    performance, 3 guard exception), 4 feature `ProductionLogObserverTest`
-    (dispatch saat create/update, skip saat validated, job ter-queue),
-    1 feature `RecalculateOeeJobTest` (job compute + broadcast),
-    3 unit `WorkCenterPolicyTest`, 3 unit `OeeUpdatedTest` (channel,
-    event name, payload shape)
+  - **Fix penting**: `app/Http/Controllers/Controller.php` sebelumnya TIDAK
+    memuat trait `AuthorizesRequests` — `$this->authorize()` gagal dengan
+    "undefined method" di semua controller (termasuk `WorkOrderController`
+    yang punya bug laten sama, belum ketahuan karena belum ada test yang
+    memicu jalur `edit()`/`destroy()`-nya). Sudah diperbaiki: base
+    `Controller` sekarang `use AuthorizesRequests;`
+  - **Fix penting**: query rentang tanggal WAJIB pakai `whereDate()`, BUKAN
+    `whereBetween()` dengan string tanggal polos. Kolom ber-cast `'date'`
+    (mis. `log_date`) di SQLite (dipakai testing) diserialisasi sebagai
+    `'YYYY-MM-DD 00:00:00'`, dan `whereBetween` membandingkan secara
+    leksikografis — batas atas string pendek `'2026-07-11'` dianggap LEBIH
+    KECIL dari `'2026-07-11 00:00:00'`, sehingga baris pada tanggal batas
+    atas salah ter-eksklusi. Tidak muncul di PostgreSQL (kolom `DATE` asli),
+    hanya di SQLite — jadi WAJIB `whereDate()` supaya konsisten lintas driver
+  - **56 test PASS** untuk Engine 2 total: 5 unit `OeeCalculatorServiceTest`
+    (cap performance, 3 guard exception), 6 unit
+    `OeeCalculatorServiceTrendAndBenchmarkTest` (trendData multi-shift,
+    ordering, filter work center, empty range, benchmark gap positif/negatif),
+    4 unit `DowntimeAnalysisServiceTest` (pareto correctness, filter work
+    center, empty range, exclude luar rentang), 4 feature
+    `ProductionLogObserverTest`, 1 feature `RecalculateOeeJobTest`,
+    3 unit `WorkCenterPolicyTest`, 3 unit `OeeUpdatedTest`, 8 feature
+    `ProductionLogControllerTest` (create+downtime, validasi good_output,
+    update, forbidden non-creator, forbidden setelah validated, validate
+    oleh creator, forbidden validate oleh stranger, delete), 5 feature
+    `DowntimeControllerTest` (add, forbidden setelah validated, update,
+    delete, forbidden stranger)
   - **Catatan testing**: `QUEUE_CONNECTION=sync` di test env berarti
     Observer memicu job secara synchronous saat `ProductionLog::factory()->create()`.
     Test yang murni ingin menguji `OeeCalculatorService`/perilaku lain
     secara terisolasi WAJIB pakai `Event::fake([ProductionLogSaved::class])`
     di `setUp()`, kalau tidak exception validasi log bisa "bocor" duluan
     sebelum baris assert dijalankan.
+  - **Migrasi testing**: seluruh anotasi `/** @test */` (doc-comment, akan
+    di-deprecate PHPUnit 12) dikonversi ke atribut `#[Test]` +
+    `use PHPUnit\Framework\Attributes\Test;` di 16 file test. Ditemukan
+    line ending CRLF di beberapa file (kemungkinan tersentuh editor Windows
+    di WSL) yang membuat sed/perl pattern match `^namespace .*;$` gagal
+    diam-diam — normalisasi ke LF dulu (`sed -i 's/\r$//'`) sebelum insert
+    berhasil. `git add` akan otomatis menormalkan CRLF sisa di beberapa file
+    baru sesuai konfigurasi Git.
 
 ### 🔄 In Progress
 - (belum ada — siap mulai task baru)
@@ -174,17 +229,11 @@ npx soketi start
 - Halaman Vue/Inertia `WorkOrders/{Index,Create,Show,Edit}.vue` — controller
   sudah render Inertia::render(...) tapi file .vue belum ada, jadi belum bisa
   diakses lewat browser
-- Phase 3 — Engine 2 (OEE & Downtime): backend fondasi SUDAH SELESAI
-  (lihat ✅ Done). Yang BELUM:
+- Phase 3 — Engine 2 (OEE & Downtime): BACKEND SUDAH SELESAI SEPENUHNYA
+  (lihat ✅ Done — Pareto, trend, benchmark, controllers, policy, semua
+  teruji). Yang BELUM hanya frontend:
+  - Halaman Vue/Inertia `ProductionLogs/{Index,Create,Show,Edit}.vue`
   - `OeeGauge.vue`, `ParetoChart.vue`, `OEE/Dashboard.vue` (live update via Echo)
-  - Pareto Analysis algorithm (docs/oee-formulas.md § Pareto Analysis
-    Downtime) — belum diimplementasi sama sekali
-  - `trendData()` method (docs/oee-formulas.md § OEE Trend & Benchmark)
-  - `benchmarkVsWorldClass()` method
-  - `ProductionLogController` + `DowntimeController` (CRUD belum ada)
-  - `StoreProductionLogRequest`, `UpdateProductionLogRequest`,
-    `StoreDowntimeEventRequest`
-  - `ProductionLogPolicy` (update hanya jika belum validated + creator)
   - Soketi belum benar-benar dijalankan/dites end-to-end (baru
     `BROADCAST_CONNECTION=log`, belum `pusher` + `npx soketi start`)
 - Phase 4 — Engine 3 (Inventory/MRP): EoqCalculatorService, MrpService,
@@ -249,7 +298,8 @@ Baca dokumen yang relevan **sebelum** mengimplementasi fitur apapun:
 | `JobShopSchedulerService` | Jalankan 4 dispatching rules, simpan schedule       | ✅ Selesai   |
 | `GanttBuilderService`     | Transform assignments → D3.js-ready dataset         | ✅ Selesai   |
 | `ScheduleApplierService`  | Terapkan schedule terpilih ke wo_operations         | ✅ Selesai   |
-| `OeeCalculatorService`    | Hitung OEE (✅). Pareto, trend data, benchmark (⏳)  | 🔄 Sebagian  |
+| `OeeCalculatorService`    | Hitung OEE, trend data, benchmark vs world class    | ✅ Selesai   |
+| `DowntimeAnalysisService` | Pareto analysis downtime (agregat cross-log)        | ✅ Selesai   |
 | `EoqCalculatorService`    | EOQ, Safety Stock, ROP, Total Annual Cost (bcmath)  | ⏳ Belum     |
 | `MrpService`              | MRP explosion: schedule → material requirements     | ⏳ Belum     |
 | `ExportService`           | Orkestrasi PDF & Excel export per engine            | ⏳ Belum     |
@@ -321,14 +371,15 @@ Net Req(t)   = max(0, GrossReq(t) - ProjOnHand(t-1) - ScheduledReceipts(t))
 - [x] GanttChart.vue interaktif + Compare.vue
 - [x] ScheduleApplierService
 
-### Phase 3 — Engine 2: OEE (Week 5–6) 🔄 SEBAGIAN
-- [x] OeeCalculatorService (bcmath)
+### Phase 3 — Engine 2: OEE (Week 5–6) 🔄 BACKEND SELESAI, FRONTEND BELUM
+- [x] OeeCalculatorService (bcmath) — compute, trendData, benchmarkVsWorldClass
+- [x] DowntimeAnalysisService — paretoDowntime
 - [x] ProductionLogObserver + RecalculateOeeJob + broadcast infrastructure
 - [x] WorkCenterPolicy + routes/channels.php
+- [x] ProductionLogController + DowntimeController + Form Requests
+- [x] ProductionLogPolicy
 - [ ] Soketi benar-benar dijalankan & dites end-to-end (masih driver `log`)
-- [ ] Pareto Analysis algorithm
-- [ ] trendData() + benchmarkVsWorldClass()
-- [ ] ProductionLogController + DowntimeController + Form Requests
+- [ ] Halaman Vue ProductionLogs/{Index,Create,Show,Edit}.vue
 - [ ] OeeGauge.vue, ParetoChart.vue, OEE/Dashboard.vue live update
 
 ### Phase 4 — Engine 3: Inventory (Week 7–8)
