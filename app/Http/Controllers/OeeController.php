@@ -136,4 +136,34 @@ class OeeController extends Controller
     {
         return response()->json($this->calculator->benchmarkVsWorldClass($oeeSnapshot));
     }
+
+    /**
+     * GET /api/oee/work-centers/{workCenter}/latest-snapshot
+     *
+     * Dipanggil dari OEE/Dashboard.vue saat user ganti dropdown mesin --
+     * supaya gauge DAN benchmark card sama-sama ikut update akurat
+     * (sebelumnya Dashboard.vue derive snapshot dari titik terakhir trend,
+     * yang tidak cukup presisi untuk benchmark karena trend adalah
+     * rata-rata harian lintas shift, bukan snapshot per-shift asli).
+     *
+     * Query "ambil snapshot terbaru per work center" cukup sederhana untuk
+     * ditulis langsung di controller (lihat pengecualian di
+     * engineering-rules.md § 4), bukan logic bisnis/kalkulasi.
+     */
+    public function latestSnapshotWithBenchmark(WorkCenter $workCenter): JsonResponse
+    {
+        $snapshot = OeeSnapshot::query()
+            ->where('work_center_id', $workCenter->id)
+            ->orderByDesc('computed_at')
+            ->first();
+
+        if (! $snapshot) {
+            return response()->json(['snapshot' => null, 'benchmark' => null]);
+        }
+
+        return response()->json([
+            'snapshot' => $snapshot,
+            'benchmark' => $this->calculator->benchmarkVsWorldClass($snapshot),
+        ]);
+    }
 }

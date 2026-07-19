@@ -6,7 +6,6 @@ use App\Http\Controllers\WorkOrderController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\ProductionLogController;
 use App\Http\Controllers\DowntimeController;
-use Inertia\Inertia;
 use App\Http\Controllers\OeeController;
 
 Route::get('/', function () {
@@ -32,11 +31,6 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
-    Route::post('/schedules/apply', [ScheduleController::class, 'apply'])
-        ->name('schedules.apply');
-});
-
-Route::middleware('auth')->group(function () {
     Route::resource('production-logs', ProductionLogController::class);
     Route::patch('production-logs/{productionLog}/validate', [ProductionLogController::class, 'validateAction'])
         ->name('production-logs.validate');
@@ -47,32 +41,37 @@ Route::middleware('auth')->group(function () {
         ->name('production-logs.downtime-events.update');
     Route::delete('production-logs/{productionLog}/downtime-events/{downtimeEvent}', [DowntimeController::class, 'destroy'])
         ->name('production-logs.downtime-events.destroy');
-    
-    Route::get('/dev/oee-gauge-test', fn () => Inertia::render('Dev/OeeGaugeTest'));
 });
 
-    Route::middleware('auth')->group(function () {
-        Route::get('/oee/dashboard', [OeeController::class, 'dashboard'])->name('oee.dashboard');
-    });
+Route::middleware('auth')->group(function () {
+    Route::get('/oee/dashboard', [OeeController::class, 'dashboard'])->name('oee.dashboard');
+});
 
-
-    Route::middleware('auth')->group(function () {
+Route::middleware('auth')->group(function () {
     Route::post('/schedules/run', [ScheduleController::class, 'run'])
         ->name('schedules.run');
     Route::post('/schedules/compare-all', [ScheduleController::class, 'compareAll'])
         ->name('schedules.compare-all');
+    Route::post('/schedules/apply', [ScheduleController::class, 'apply'])
+        ->name('schedules.apply');
+
+    // Route statis (compare-all, apply, run) WAJIB didaftarkan sebelum
+    // wildcard {schedule} di bawah ini -- kalau tidak, Laravel akan
+    // menangkap path seperti "/schedules/compare" sebagai {schedule}="compare"
+    // dan meledak saat dipaksa jadi bigint di query SQL.
     Route::get('/schedules/{schedule}', function (\App\Models\Schedule $schedule, \App\Services\Scheduling\GanttBuilderService $gantt) {
         $siblingIds = \App\Models\Schedule::query()
             ->where('scheduled_from', $schedule->scheduled_from)
             ->pluck('id', 'algorithm');
+
         return \Inertia\Inertia::render('Schedules/Show', [
             'initialData' => $gantt->build($schedule),
             'scheduleIds' => $siblingIds,
         ]);
-                })->name('schedules.show');
+    })->name('schedules.show');
+});
 
-        Route::post('/schedules/apply', [ScheduleController::class, 'apply'])
-            ->name('schedules.apply');
-    });
+Route::get('/oee/work-centers/{workCenter}/latest-snapshot', [OeeController::class, 'latestSnapshotWithBenchmark'])
+    ->name('oee.latest-snapshot');
 
 require __DIR__.'/auth.php';
