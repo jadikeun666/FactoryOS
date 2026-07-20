@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ScheduleCreated;
 use App\Exceptions\ScheduleApplyException;
 use App\Http\Requests\ApplyScheduleRequest;
 use App\Models\Schedule;
@@ -19,6 +20,11 @@ use Illuminate\Http\Request;
  * JobShopSchedulerService (sudah ada & teruji), disertakan di sini hanya
  * agar struktur controller sesuai spesifikasi di architecture.md.
  * ganttData() dan apply() diimplementasikan penuh.
+ *
+ * run() men-dispatch ScheduleCreated setelah Schedule berhasil dibuat
+ * (baru sesi 2026-07-20, lihat app/Events/ScheduleCreated.php) — memicu
+ * TriggerMrpRunListener -> RunMrpJob sesuai docs/architecture.md dan
+ * docs/engineering-rules.md § 9.
  */
 class ScheduleController extends Controller
 {
@@ -41,7 +47,9 @@ class ScheduleController extends Controller
 
         $startFrom = $validated['start_from'] ?? now();
 
-        $this->scheduler->run($validated['algorithm'], \Illuminate\Support\Carbon::parse($startFrom));
+        $schedule = $this->scheduler->run($validated['algorithm'], \Illuminate\Support\Carbon::parse($startFrom));
+
+        ScheduleCreated::dispatch($schedule);
 
         return back()->with('success', 'Schedule berhasil dijalankan.');
     }

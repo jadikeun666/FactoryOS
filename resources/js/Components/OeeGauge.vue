@@ -214,7 +214,7 @@ onMounted(() => subscribe(props.workCenterId))
 onBeforeUnmount(() => unsubscribe())
 watch(() => props.workCenterId, (newId) => subscribe(newId))
 watch(() => props.initialSnapshot, (val) => {
-  if (val) snapshot.value = val
+  snapshot.value = val
 })
 </script>
 

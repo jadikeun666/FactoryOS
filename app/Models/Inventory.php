@@ -9,6 +9,15 @@ class Inventory extends Model
 {
     use HasFactory;
 
+    /**
+     * Nama tabel migration adalah 'inventory' (singular), bukan
+     * 'inventories' -- Eloquent secara default menebak nama tabel plural
+     * dari nama model. Tanpa override ini, query ke model Inventory akan
+     * gagal dengan "no such table: inventories" (ditemukan saat menulis
+     * MrpServiceTest, sesi 2026-07-20).
+     */
+    protected $table = 'inventory';
+
     public $timestamps = false; // hanya last_updated
 
     protected $fillable = ['material_id', 'qty_on_hand', 'qty_on_order', 'last_updated'];
