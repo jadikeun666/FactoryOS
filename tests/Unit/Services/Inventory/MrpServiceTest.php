@@ -8,6 +8,7 @@ use App\Models\InventoryParam;
 use App\Models\InventoryTransaction;
 use App\Models\Material;
 use App\Models\Product;
+use App\Models\ReorderAlert;
 use App\Models\WorkOrder;
 use App\Services\Inventory\EoqCalculatorService;
 use App\Services\Inventory\MrpService;
@@ -215,5 +216,130 @@ class MrpServiceTest extends TestCase
 
         // Material B: 10 x 1 = 10
         $this->assertSame('10.0000000000', $result[$materialB->id][$dueDate->toDateString()]);
+    }
+    /**
+     * checkReorderAlerts() skenario (a): qty_on_hand + qty_on_order <= rop
+     * WAJIB memicu pembuatan ReorderAlert baru berstatus 'open', dengan
+     * current_qty = qty_on_hand + qty_on_order (bukan qty_on_hand saja).
+     */
+    public function test_check_reorder_alerts_creates_alert_when_stock_at_or_below_rop(): void
+    {
+        $material = Material::factory()->create(['name' => 'Besi Plat 2mm']);
+
+        Inventory::create([
+            'material_id'  => $material->id,
+            'qty_on_hand'  => 20,
+            'qty_on_order' => 0,
+            'last_updated' => now(),
+        ]);
+
+        InventoryParam::create([
+            'material_id'                => $material->id,
+            'annual_demand'              => 3650,
+            'ordering_cost'              => 150000,
+            'holding_cost_per_unit_year' => 5000,
+            'lead_time_days'             => 3,
+            'demand_std_dev'             => 3,
+            'service_level_z'            => 1.6450,
+            'eoq'                        => 467.9744,
+            'rop'                        => 38.5477, // qty_on_hand (20) <= rop -> harus trigger alert
+        ]);
+
+        $created = $this->service->checkReorderAlerts();
+
+        $this->assertCount(1, $created);
+
+        $this->assertDatabaseHas('reorder_alerts', [
+            'material_id' => $material->id,
+            'status'      => 'open',
+        ]);
+
+        $alert = ReorderAlert::where('material_id', $material->id)->first();
+        $this->assertSame('20.0000', $alert->current_qty);
+    }
+
+    /**
+     * checkReorderAlerts() skenario (b): idempotency guard. Jika sudah
+     * ada ReorderAlert status 'open' untuk material tsb, run kedua TIDAK
+     * BOLEH membuat alert duplikat -- sesuai docs/inventory.md § Reorder
+     * Alert Logic ("if no open alert for this material").
+     */
+    public function test_check_reorder_alerts_does_not_duplicate_when_open_alert_exists(): void
+    {
+        $material = Material::factory()->create(['name' => 'Besi Plat 2mm']);
+
+        Inventory::create([
+            'material_id'  => $material->id,
+            'qty_on_hand'  => 20,
+            'qty_on_order' => 0,
+            'last_updated' => now(),
+        ]);
+
+        InventoryParam::create([
+            'material_id'                => $material->id,
+            'annual_demand'              => 3650,
+            'ordering_cost'              => 150000,
+            'holding_cost_per_unit_year' => 5000,
+            'lead_time_days'             => 3,
+            'demand_std_dev'             => 3,
+            'service_level_z'            => 1.6450,
+            'eoq'                        => 467.9744,
+            'rop'                        => 38.5477,
+        ]);
+
+        // Run pertama: harus membuat 1 alert.
+        $firstRun = $this->service->checkReorderAlerts();
+        $this->assertCount(1, $firstRun);
+        $this->assertDatabaseCount('reorder_alerts', 1);
+
+        // Run kedua: kondisi stok belum berubah, alert 'open' masih ada
+        // -> TIDAK BOLEH ada alert baru.
+        $secondRun = $this->service->checkReorderAlerts();
+        $this->assertCount(0, $secondRun);
+        $this->assertDatabaseCount('reorder_alerts', 1);
+    }
+
+    /**
+     * checkReorderAlerts() skenario (c): eoq_qty pada alert WAJIB
+     * mengambil dari InventoryParam::eoq yang sudah tersimpan, bukan
+     * dihitung ulang via EoqCalculatorService::computeEoq() -- fallback
+     * hitung ulang hanya terjadi jika InventoryParam::eoq null (lihat
+     * MrpService::checkReorderAlerts(): `$param->eoq ?? $this->eoq->
+     * computeEoq($param)`). Test ini memastikan nilai EOQ yang SENGAJA
+     * dipatok berbeda dari hasil formula tetap dipakai apa adanya.
+     */
+    public function test_check_reorder_alerts_uses_stored_eoq_not_recomputed(): void
+    {
+        $material = Material::factory()->create(['name' => 'Besi Plat 2mm']);
+
+        Inventory::create([
+            'material_id'  => $material->id,
+            'qty_on_hand'  => 5,
+            'qty_on_order' => 0,
+            'last_updated' => now(),
+        ]);
+
+        // eoq dipatok manual ke nilai yang SENGAJA tidak sama dengan hasil
+        // formula EOQ dari annual_demand/ordering_cost/holding_cost di
+        // bawah ini (formula nyata akan menghasilkan angka lain sama
+        // sekali) -- supaya test ini benar-benar membuktikan nilai stored
+        // yang dipakai, bukan hasil hitung ulang.
+        InventoryParam::create([
+            'material_id'                => $material->id,
+            'annual_demand'              => 3650,
+            'ordering_cost'              => 150000,
+            'holding_cost_per_unit_year' => 5000,
+            'lead_time_days'             => 3,
+            'demand_std_dev'             => 3,
+            'service_level_z'            => 1.6450,
+            'eoq'                        => '999.0000', // nilai patokan, bukan hasil formula
+            'rop'                        => 100, // qty_on_hand (5) <= rop -> trigger
+        ]);
+
+        $this->service->checkReorderAlerts();
+
+        $alert = ReorderAlert::where('material_id', $material->id)->first();
+
+        $this->assertSame('999.0000', $alert->eoq_qty);
     }
 }

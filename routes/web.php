@@ -7,6 +7,8 @@ use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\ProductionLogController;
 use App\Http\Controllers\DowntimeController;
 use App\Http\Controllers\OeeController;
+use App\Http\Controllers\MrpController;
+
 
 Route::get('/', function () {
     return view('welcome');
@@ -48,6 +50,18 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    Route::post('/mrp/run', [MrpController::class, 'run'])
+        ->name('mrp.run');
+    Route::get('/mrp/alerts', [MrpController::class, 'alerts'])
+        ->name('mrp.alerts');
+    // Wildcard {mrpRun} didaftarkan SETELAH path statis /mrp/alerts,
+    // konsisten dengan aturan ordering statis-sebelum-wildcard yang
+    // sudah diterapkan di grup /schedules.
+    Route::get('/mrp/runs/{mrpRun}', [MrpController::class, 'show'])
+        ->name('mrp.runs.show');
+});
+
+Route::middleware('auth')->group(function () {
     Route::post('/schedules/run', [ScheduleController::class, 'run'])
         ->name('schedules.run');
     Route::post('/schedules/compare-all', [ScheduleController::class, 'compareAll'])
@@ -55,8 +69,33 @@ Route::middleware('auth')->group(function () {
     Route::post('/schedules/apply', [ScheduleController::class, 'apply'])
         ->name('schedules.apply');
 
-    // Route statis (compare-all, apply, run) WAJIB didaftarkan sebelum
-    // wildcard {schedule} di bawah ini -- kalau tidak, Laravel akan
+    // GET /schedules/compare — merender halaman Schedules/Compare.vue.
+    // Sebelumnya TIDAK ADA route apapun untuk ini (compareAll() controller
+    // hanya return JSON untuk fetch API), sehingga tombol "↺ Bandingkan
+    // Ulang" di Schedules/Show.vue (compareUrl default '/schedules/compare')
+    // selalu 500 karena jatuh ke wildcard {schedule} di bawah dan mencoba
+    // resolve "compare" sebagai bigint id. Ditambahkan sesi ini (utang
+    // teknis item 1, lihat claude.md § Utang Teknis).
+    //
+    // array_values() WAJIB di sini: JobShopSchedulerService::compareAll()
+    // mengembalikan array asosiatif ['spt' => Schedule, 'edd' => Schedule,
+    // 'cr' => Schedule, 'fifo' => Schedule']. Tanpa array_values(), Inertia
+    // akan serialize ini sebagai JSON object, bukan array — merusak
+    // v-for/.map()/.find()/.sort() di Compare.vue yang mengasumsikan
+    // props.results adalah array.
+    Route::get('/schedules/compare', function (\Illuminate\Http\Request $request, \App\Services\Scheduling\JobShopSchedulerService $scheduler) {
+        $startFrom = $request->query('start_from') ?? now();
+
+        $results = $scheduler->compareAll(\Illuminate\Support\Carbon::parse($startFrom));
+
+        return \Inertia\Inertia::render('Schedules/Compare', [
+            'results'  => array_values($results),
+            'indexUrl' => '/work-orders',
+        ]);
+    })->name('schedules.compare');
+
+    // Route statis (compare-all, apply, run, compare) WAJIB didaftarkan
+    // sebelum wildcard {schedule} di bawah ini -- kalau tidak, Laravel akan
     // menangkap path seperti "/schedules/compare" sebagai {schedule}="compare"
     // dan meledak saat dipaksa jadi bigint di query SQL.
     Route::get('/schedules/{schedule}', function (\App\Models\Schedule $schedule, \App\Services\Scheduling\GanttBuilderService $gantt) {
