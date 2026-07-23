@@ -7,6 +7,9 @@ use App\Models\ReorderAlert;
 use App\Services\Inventory\MrpService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Models\Material;
+use Inertia\Inertia;
+use Inertia\Response as InertiaResponse;
 
 /**
  * MrpController — thin controller untuk Engine 3 (MRP), pola identik
@@ -84,5 +87,22 @@ class MrpController extends Controller
             ->get();
 
         return response()->json($alerts);
+    }
+    public function dashboard(): InertiaResponse
+    {
+        $latestMrpRun = MrpRun::query()
+        ->with(['requirements.material', 'schedule'])
+        ->latest('id')
+        ->first();
+
+        $alerts = ReorderAlert::query()
+        ->with('material')
+        ->where('status', 'open')
+        ->latest()
+        ->get();
+        return Inertia::render('Mrp/Dashboard', [
+        'initialAlerts' => $alerts,
+        'initialMrpRun' => $latestMrpRun,
+            ]);
     }
 }

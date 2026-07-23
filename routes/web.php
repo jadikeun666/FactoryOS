@@ -8,6 +8,13 @@ use App\Http\Controllers\ProductionLogController;
 use App\Http\Controllers\DowntimeController;
 use App\Http\Controllers\OeeController;
 use App\Http\Controllers\MrpController;
+use App\Http\Controllers\InventoryController;
+use App\Http\Controllers\WorkCenterController;
+use App\Http\Controllers\MaterialController;
+use App\Http\Controllers\ProductController;
+
+
+
 
 
 Route::get('/', function () {
@@ -50,15 +57,25 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware('auth')->group(function () {
+    // GET /mrp — halaman dashboard MRP (AlertBanner + RopGauge + MrpGrid).
+    // Path statis, didaftarkan di posisi teratas grup ini untuk konsistensi
+    // dengan pola ordering statis-sebelum-wildcard yang sudah diterapkan
+    // di seluruh project (lihat catatan di /schedules/{schedule}).
+    Route::get('/mrp', [MrpController::class, 'dashboard'])
+        ->name('mrp.dashboard');
+
     Route::post('/mrp/run', [MrpController::class, 'run'])
         ->name('mrp.run');
     Route::get('/mrp/alerts', [MrpController::class, 'alerts'])
         ->name('mrp.alerts');
-    // Wildcard {mrpRun} didaftarkan SETELAH path statis /mrp/alerts,
-    // konsisten dengan aturan ordering statis-sebelum-wildcard yang
+    // Wildcard {mrpRun} didaftarkan SETELAH path statis /mrp/alerts dan
+    // /mrp, konsisten dengan aturan ordering statis-sebelum-wildcard yang
     // sudah diterapkan di grup /schedules.
     Route::get('/mrp/runs/{mrpRun}', [MrpController::class, 'show'])
         ->name('mrp.runs.show');
+
+    Route::get('/inventory/status', [InventoryController::class, 'status'])
+        ->name('inventory.status');
 });
 
 Route::middleware('auth')->group(function () {
@@ -108,6 +125,34 @@ Route::middleware('auth')->group(function () {
             'scheduleIds' => $siblingIds,
         ]);
     })->name('schedules.show');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::resource('work-centers', WorkCenterController::class)->except(['show']);
+    Route::patch('work-centers/{workCenter}/toggle-active', [WorkCenterController::class, 'toggleActive'])
+        ->name('work-centers.toggle-active');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::resource('materials', MaterialController::class)->except(['show']);
+});
+
+Route::middleware('auth')->group(function () {
+    Route::resource('products', ProductController::class)->except(['show']);
+
+    Route::post('products/{product}/bom', [ProductController::class, 'storeBom'])
+        ->name('products.bom.store');
+    Route::put('products/{product}/bom/{bom}', [ProductController::class, 'updateBom'])
+        ->name('products.bom.update');
+    Route::delete('products/{product}/bom/{bom}', [ProductController::class, 'destroyBom'])
+        ->name('products.bom.destroy');
+
+    Route::post('products/{product}/routings', [ProductController::class, 'storeRouting'])
+        ->name('products.routings.store');
+    Route::put('products/{product}/routings/{routing}', [ProductController::class, 'updateRouting'])
+        ->name('products.routings.update');
+    Route::delete('products/{product}/routings/{routing}', [ProductController::class, 'destroyRouting'])
+        ->name('products.routings.destroy');
 });
 
 Route::get('/oee/work-centers/{workCenter}/latest-snapshot', [OeeController::class, 'latestSnapshotWithBenchmark'])
