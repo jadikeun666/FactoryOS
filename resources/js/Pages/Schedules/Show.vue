@@ -9,9 +9,14 @@
         </h1>
         <p class="page-subtitle">Dibuat {{ formattedCreatedAt }}</p>
       </div>
-      <Link :href="compareUrl" class="btn btn--ghost">↺ Bandingkan Ulang</Link>
+      <div class="header-actions">
+        <button class="btn btn--primary" :disabled="exporting" @click="exportPdf">
+          <span v-if="exporting">⏳ Memproses...</span>
+          <span v-else>⬇ Export PDF</span>
+        </button>
+        <Link :href="compareUrl" class="btn btn--ghost">↺ Bandingkan Ulang</Link>
+      </div>
     </header>
-
     <div class="gantt-shell">
       <GanttChart
         :initial-data="initialData"
@@ -21,7 +26,6 @@
     </div>
   </div>
 </template>
-
 <script setup>
 /**
  * ASUMSI: controller merender halaman ini via Inertia dengan props:
@@ -30,19 +34,86 @@
  *                 untuk toggle antar algoritma tanpa reload halaman
  *   compareUrl:   url kembali ke halaman Compare.vue (opsional)
  */
-import { computed } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import { Link } from '@inertiajs/vue3'
 import GanttChart from '@/Components/GanttChart.vue'
-
 const props = defineProps({
   initialData: { type: Object, required: true },
   scheduleIds: { type: Object, required: true },
   compareUrl: { type: String, default: '/schedules/compare' },
 })
-
 const scheduleId = computed(() => props.initialData?.schedule?.id)
-const algorithm = computed(() => props.initialData?.schedule?.algorithm ?? '–')
 
+// Export PDF: endpoint JSON murni (BUKAN Inertia render) — WAJIB fetch(),
+// bukan router.post(), sesuai pola project (lihat claude.md § Catatan
+// Teknis Penting). Job async, jadi setelah trigger kita polling endpoint
+// status sampai path siap, lalu langsung navigasi ke URL download.
+const exporting = ref(false)
+let pollTimer = null
+let pollAttempts = 0
+const MAX_POLL_ATTEMPTS = 15 // 15 x 2s = 30 detik timeout
+
+async function exportPdf() {
+  if (!scheduleId.value || exporting.value) return
+  exporting.value = true
+  pollAttempts = 0
+
+  try {
+    const res = await fetch(`/exports/schedule/${scheduleId.value}/pdf`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+        Accept: 'application/json',
+      },
+    })
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => null)
+      alert(body?.message ?? 'Export gagal diproses. Coba lagi.')
+      exporting.value = false
+      return
+    }
+
+    pollExportStatus()
+  } catch {
+    alert('Gagal menghubungi server untuk export. Periksa koneksi Anda.')
+    exporting.value = false
+  }
+}
+
+function pollExportStatus() {
+  pollTimer = setInterval(async () => {
+    pollAttempts++
+
+    try {
+      const res = await fetch(`/exports/schedule/${scheduleId.value}/pdf/status`, {
+        headers: { Accept: 'application/json' },
+      })
+      const data = await res.json()
+
+      if (data.ready && data.path) {
+        clearInterval(pollTimer)
+        exporting.value = false
+        window.location.href = `/exports/download?path=${encodeURIComponent(data.path)}`
+        return
+      }
+    } catch {
+      // Diamkan satu kegagalan poll, coba lagi di interval berikutnya —
+      // baru berhenti kalau MAX_POLL_ATTEMPTS tercapai di bawah.
+    }
+
+    if (pollAttempts >= MAX_POLL_ATTEMPTS) {
+      clearInterval(pollTimer)
+      exporting.value = false
+      alert('Export memakan waktu lebih lama dari biasanya. Coba lagi sesaat lagi.')
+    }
+  }, 2000)
+}
+
+onBeforeUnmount(() => {
+  if (pollTimer) clearInterval(pollTimer)
+})
+const algorithm = computed(() => props.initialData?.schedule?.algorithm ?? '–')
 const formattedCreatedAt = computed(() => {
   const raw = props.initialData?.schedule?.scheduled_from
   if (!raw) return '–'
@@ -50,12 +121,10 @@ const formattedCreatedAt = computed(() => {
     day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
   })
 })
-
 function ganttDataUrl(id) {
   return `/api/schedules/${id}/gantt-data`
 }
 </script>
-
 <style scoped>
 .show-page {
   display: flex;
@@ -66,23 +135,19 @@ function ganttDataUrl(id) {
   margin: 0 auto;
   animation: page-fade 0.35s ease both;
 }
-
 @keyframes page-fade {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
 @media (prefers-reduced-motion: reduce) {
   .show-page { animation: none; }
 }
-
 .page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
 }
-
 .page-eyebrow {
   font-size: 0.75rem;
   font-weight: 600;
@@ -91,7 +156,6 @@ function ganttDataUrl(id) {
   color: #F59E0B;
   margin: 0 0 0.25rem;
 }
-
 .page-title {
   display: flex;
   align-items: center;
@@ -101,7 +165,6 @@ function ganttDataUrl(id) {
   color: #0F172A;
   margin: 0;
 }
-
 .algo-badge {
   font-size: 0.6875rem;
   font-weight: 700;
@@ -112,13 +175,11 @@ function ganttDataUrl(id) {
   color: #F8FAFC;
   vertical-align: middle;
 }
-
 .page-subtitle {
   font-size: 0.8125rem;
   color: #64748B;
   margin: 0.35rem 0 0;
 }
-
 .btn {
   display: inline-flex;
   align-items: center;
@@ -132,22 +193,31 @@ function ganttDataUrl(id) {
   text-decoration: none;
   transition: background-color 0.15s ease, transform 0.12s ease;
 }
-
 .btn:active { transform: translateY(1px); }
-
 .btn--ghost {
   background: #FFFFFF;
   border-color: #E2E8F0;
   color: #334155;
 }
-
 .btn--ghost:hover { background: #F8FAFC; }
-
+.btn--primary {
+  background: #0F172A;
+  color: #F8FAFC;
+}
+.btn--primary:hover:not(:disabled) { background: #1E293B; }
+.btn--primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
 .gantt-shell {
   animation: page-fade 0.45s ease both;
   animation-delay: 80ms;
 }
-
 @media (prefers-reduced-motion: reduce) {
   .gantt-shell { animation: none; }
 }

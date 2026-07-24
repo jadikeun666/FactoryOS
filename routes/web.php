@@ -12,6 +12,9 @@ use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\WorkCenterController;
 use App\Http\Controllers\MaterialController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ExportController;
+
 
 
 
@@ -21,9 +24,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -154,6 +157,38 @@ Route::middleware('auth')->group(function () {
     Route::delete('products/{product}/routings/{routing}', [ProductController::class, 'destroyRouting'])
         ->name('products.routings.destroy');
 });
+
+Route::middleware('auth')->group(function () {
+    Route::post('/exports/schedule/{schedule}/pdf', [ExportController::class, 'schedulePdf'])
+        ->name('exports.schedule.pdf');
+    Route::get('/exports/download', [ExportController::class, 'download'])
+        ->name('exports.download');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::post('/exports/schedule/{schedule}/pdf', [ExportController::class, 'schedulePdf'])
+        ->name('exports.schedule.pdf');
+    Route::get('/exports/schedule/{schedule}/pdf/status', [ExportController::class, 'schedulePdfStatus'])
+        ->name('exports.schedule.pdf.status');
+    Route::get('/exports/download', [ExportController::class, 'download'])
+        ->name('exports.download');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::post('/exports/schedule/{schedule}/pdf', [ExportController::class, 'schedulePdf'])
+        ->name('exports.schedule.pdf');
+    Route::get('/exports/schedule/{schedule}/pdf/status', [ExportController::class, 'schedulePdfStatus'])
+        ->name('exports.schedule.pdf.status');
+
+    Route::post('/exports/oee/pdf', [ExportController::class, 'oeePdf'])
+        ->name('exports.oee.pdf');
+    Route::get('/exports/oee/pdf/status', [ExportController::class, 'oeePdfStatus'])
+        ->name('exports.oee.pdf.status');
+
+    Route::get('/exports/download', [ExportController::class, 'download'])
+        ->name('exports.download');
+});
+
 
 Route::get('/oee/work-centers/{workCenter}/latest-snapshot', [OeeController::class, 'latestSnapshotWithBenchmark'])
     ->name('oee.latest-snapshot');
