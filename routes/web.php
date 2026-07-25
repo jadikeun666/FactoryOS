@@ -189,6 +189,20 @@ Route::middleware('auth')->group(function () {
         ->name('exports.download');
 });
 
+Route::middleware('auth')->group(function () {
+    Route::post('/exports/mrp/{mrpRun}/excel', [ExportController::class, 'mrpExcel'])
+        ->name('exports.mrp.excel');
+    Route::get('/exports/mrp/{mrpRun}/excel/status', [ExportController::class, 'mrpExcelStatus'])
+        ->name('exports.mrp.excel.status');
+});
+
+Route::middleware('auth')->group(function () {
+    Route::post('/exports/oee-trend/excel', [ExportController::class, 'oeeTrendExcel'])
+        ->name('exports.oee-trend.excel');
+    Route::get('/exports/oee-trend/excel/status', [ExportController::class, 'oeeTrendExcelStatus'])
+        ->name('exports.oee-trend.excel.status');
+});
+
 
 Route::get('/oee/work-centers/{workCenter}/latest-snapshot', [OeeController::class, 'latestSnapshotWithBenchmark'])
     ->name('oee.latest-snapshot');

@@ -7,14 +7,36 @@
         <p class="page-subtitle">Kondisi lantai produksi real-time, Pareto downtime, dan tren historis.</p>
       </div>
 
-      <label class="wc-select">
-        <span>Mesin</span>
-        <select v-model="selectedWorkCenterId" class="input" @change="switchWorkCenter">
-          <option v-for="wc in workCenters" :key="wc.id" :value="wc.id">
-            {{ wc.name }} ({{ wc.code }})
-          </option>
-        </select>
-      </label>
+      <div class="header-actions">
+        <label class="wc-select">
+          <span>Mesin</span>
+          <select v-model="selectedWorkCenterId" class="input" @change="switchWorkCenter">
+            <option v-for="wc in workCenters" :key="wc.id" :value="wc.id">
+              {{ wc.name }} ({{ wc.code }})
+            </option>
+          </select>
+        </label>
+
+        <label class="wc-select">
+          <span>Tanggal Export</span>
+          <input v-model="exportDate" type="date" class="input input--date" />
+        </label>
+
+        <button class="btn btn--primary" :disabled="exporting" @click="exportOeePdf">
+          <span v-if="exporting">⏳ Memproses...</span>
+          <span v-else>⬇ Export PDF Harian</span>
+        </button>
+
+        <label class="wc-select">
+          <span>Bulan Export</span>
+          <input v-model="exportMonth" type="month" class="input input--date" />
+        </label>
+
+        <button class="btn btn--secondary" :disabled="exportingTrend" @click="exportOeeTrendExcel">
+          <span v-if="exportingTrend">⏳ Memproses...</span>
+          <span v-else>⬇ Export Excel Trend</span>
+        </button>
+      </div>
     </header>
 
     <section class="gauge-section">
@@ -114,6 +136,83 @@ const trend = ref(props.initialTrend)
 const pareto = ref(props.initialPareto)
 const benchmark = ref(props.initialBenchmark)
 const isTrendLoading = ref(false)
+
+// Export PDF OEE Harian: endpoint JSON murni, WAJIB fetch() bukan
+// router.post() (lihat claude.md § Catatan Teknis Penting). Halaman ini
+// tidak punya date picker sebelumnya (trend pakai rentang 30 hari tetap
+// dari server) — ditambah satu <input type="date"> khusus untuk export,
+// default hari ini, terpisah dari dateRange trend.
+const exportDate = ref(new Date().toISOString().slice(0, 10))
+const exporting = ref(false)
+let exportPollTimer = null
+let exportPollAttempts = 0
+const MAX_EXPORT_POLL_ATTEMPTS = 15 // 15 x 2s = 30 detik timeout
+
+async function exportOeePdf() {
+  if (exporting.value) return
+  exporting.value = true
+  exportPollAttempts = 0
+
+  try {
+    const res = await fetch('/exports/oee/pdf', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        date: exportDate.value,
+        work_center_id: selectedWorkCenterId.value,
+      }),
+    })
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => null)
+      alert(body?.message ?? 'Export gagal diproses. Coba lagi.')
+      exporting.value = false
+      return
+    }
+
+    pollExportStatus()
+  } catch {
+    alert('Gagal menghubungi server untuk export. Periksa koneksi Anda.')
+    exporting.value = false
+  }
+}
+
+function pollExportStatus() {
+  const statusParams = new URLSearchParams({
+    date: exportDate.value,
+    work_center_id: String(selectedWorkCenterId.value ?? ''),
+  })
+
+  exportPollTimer = setInterval(async () => {
+    exportPollAttempts++
+
+    try {
+      const res = await fetch(`/exports/oee/pdf/status?${statusParams.toString()}`, {
+        headers: { Accept: 'application/json' },
+      })
+      const data = await res.json()
+
+      if (data.ready && data.path) {
+        clearInterval(exportPollTimer)
+        exporting.value = false
+        window.location.href = `/exports/download?path=${encodeURIComponent(data.path)}`
+        return
+      }
+    } catch {
+      // Diamkan satu kegagalan poll, coba lagi di interval berikutnya.
+    }
+
+    if (exportPollAttempts >= MAX_EXPORT_POLL_ATTEMPTS) {
+      clearInterval(exportPollTimer)
+      exporting.value = false
+      alert('Export memakan waktu lebih lama dari biasanya. Coba lagi sesaat lagi.')
+    }
+  }, 2000)
+}
 
 const trendContainer = ref(null)
 const trendSvgRef = ref(null)
@@ -242,9 +341,6 @@ function renderTrend() {
       .attr('opacity', s.key === 'oee' ? 1 : 0.6)
       .attr('d', lineGen)
 
-    // Marker titik per data point -- penting supaya data dengan hanya
-    // 1 titik (mis. baru 1 hari snapshot tercatat) tetap terlihat, karena
-    // <path> garis butuh minimal 2 titik untuk tergambar sama sekali.
     svg.append('g')
       .selectAll(`circle.point-${s.key}`)
       .data(data)
@@ -257,7 +353,6 @@ function renderTrend() {
       .attr('opacity', s.key === 'oee' ? 1 : 0.6)
   })
 
-  // Legend sederhana
   const legend = svg.append('g').attr('transform', `translate(${margin.left}, ${margin.top - 10})`)
   series.forEach((s, i) => {
     const g = legend.append('g').attr('transform', `translate(${i * 110}, 0)`)
@@ -277,7 +372,77 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   if (resizeObserver && trendContainer.value) resizeObserver.unobserve(trendContainer.value)
+  if (exportPollTimer) clearInterval(exportPollTimer)
+  if (exportTrendPollTimer) clearInterval(exportTrendPollTimer)
 })
+
+// Export Excel OEE Trend Bulanan: endpoint JSON murni, WAJIB fetch()
+// bukan router.post() (lihat claude.md § Catatan Teknis Penting).
+const exportMonth = ref(new Date().toISOString().slice(0, 7)) // format YYYY-MM
+const exportingTrend = ref(false)
+let exportTrendPollTimer = null
+let exportTrendPollAttempts = 0
+const MAX_EXPORT_TREND_POLL_ATTEMPTS = 15 // 15 x 2s = 30 detik timeout
+
+async function exportOeeTrendExcel() {
+  if (exportingTrend.value) return
+  exportingTrend.value = true
+  exportTrendPollAttempts = 0
+
+  try {
+    const res = await fetch('/exports/oee-trend/excel', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({ month: exportMonth.value }),
+    })
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => null)
+      alert(body?.message ?? 'Export gagal diproses. Coba lagi.')
+      exportingTrend.value = false
+      return
+    }
+
+    pollExportTrendStatus()
+  } catch {
+    alert('Gagal menghubungi server untuk export. Periksa koneksi Anda.')
+    exportingTrend.value = false
+  }
+}
+
+function pollExportTrendStatus() {
+  const month = exportMonth.value
+
+  exportTrendPollTimer = setInterval(async () => {
+    exportTrendPollAttempts++
+
+    try {
+      const res = await fetch(`/exports/oee-trend/excel/status?month=${encodeURIComponent(month)}`, {
+        headers: { Accept: 'application/json' },
+      })
+      const data = await res.json()
+
+      if (data.ready && data.path) {
+        clearInterval(exportTrendPollTimer)
+        exportingTrend.value = false
+        window.location.href = `/exports/download?path=${encodeURIComponent(data.path)}`
+        return
+      }
+    } catch {
+      // Diamkan satu kegagalan poll, coba lagi di interval berikutnya.
+    }
+
+    if (exportTrendPollAttempts >= MAX_EXPORT_TREND_POLL_ATTEMPTS) {
+      clearInterval(exportTrendPollTimer)
+      exportingTrend.value = false
+      alert('Export memakan waktu lebih lama dari biasanya. Coba lagi sesaat lagi.')
+    }
+  }, 2000)
+}
 
 watch(trend, () => nextTick(() => renderTrend()))
 </script>
@@ -336,6 +501,57 @@ watch(trend, () => nextTick(() => renderTrend()))
   border: 1px solid #E2E8F0;
   border-radius: 6px;
   min-width: 220px;
+}
+
+.input--date {
+  min-width: 150px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.12s ease;
+}
+
+.btn:active { transform: translateY(1px); }
+
+.btn--primary {
+  background: #0F172A;
+  color: #F8FAFC;
+}
+
+.btn--primary:hover:not(:disabled) { background: #1E293B; }
+
+.btn--primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn--secondary {
+  background: #FFFFFF;
+  border-color: #E2E8F0;
+  color: #334155;
+}
+
+.btn--secondary:hover:not(:disabled) { background: #F8FAFC; }
+
+.btn--secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .gauge-section {

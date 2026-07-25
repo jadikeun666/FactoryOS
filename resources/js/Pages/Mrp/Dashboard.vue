@@ -9,14 +9,24 @@
           per periode.
         </p>
       </div>
-      <button
-        type="button"
-        class="btn btn--primary"
-        :disabled="isRunningMrp || !latestScheduleId"
-        @click="runMrpAgain"
-      >
-        {{ isRunningMrp ? 'Menjalankan…' : '↺ Jalankan MRP Ulang' }}
-      </button>
+      <div class="header-actions">
+        <button
+          type="button"
+          class="btn btn--secondary"
+          :disabled="exporting || !latestMrpRunId"
+          @click="exportMrpExcel"
+        >
+          {{ exporting ? '⏳ Memproses...' : '⬇ Export Excel' }}
+        </button>
+        <button
+          type="button"
+          class="btn btn--primary"
+          :disabled="isRunningMrp || !latestScheduleId"
+          @click="runMrpAgain"
+        >
+          {{ isRunningMrp ? 'Menjalankan…' : '↺ Jalankan MRP Ulang' }}
+        </button>
+      </div>
     </header>
 
     <AlertBanner :initial-alerts="initialAlerts" alerts-url="/mrp/alerts" />
@@ -57,8 +67,14 @@
  * "Jalankan MRP Ulang" POST ke /mrp/run dengan schedule_id dari
  * latestMrpRun.schedule_id (kalau ada) -- tombol nonaktif jika belum ada
  * schedule sama sekali.
+ *
+ * Export Excel MRP: pakai props.initialMrpRun langsung (computed), BUKAN
+ * salinan state lokal seperti MrpGrid.vue -- Dashboard.vue ini adalah
+ * top-level Inertia page, props-nya otomatis reaktif setelah
+ * router.reload({ only: [...] }) di runMrpAgain(), tidak butuh watch()
+ * tambahan (beda kasus dari MrpGrid.vue yang menyimpan salinan via ref()).
  */
-import { ref, computed } from 'vue'
+import { ref, computed, onBeforeUnmount } from 'vue'
 import { router } from '@inertiajs/vue3'
 import AlertBanner from '@/Components/AlertBanner.vue'
 import RopGauge from '@/Components/RopGauge.vue'
@@ -73,6 +89,7 @@ const isRunningMrp = ref(false)
 const ropGaugeRef = ref(null)
 
 const latestScheduleId = computed(() => props.initialMrpRun?.schedule_id ?? props.initialMrpRun?.schedule?.id ?? null)
+const latestMrpRunId = computed(() => props.initialMrpRun?.id ?? null)
 
 async function runMrpAgain() {
   if (!latestScheduleId.value) return
@@ -88,8 +105,6 @@ async function runMrpAgain() {
       body: JSON.stringify({ schedule_id: latestScheduleId.value }),
     })
     if (!response.ok) throw new Error(`Gagal menjalankan MRP (${response.status})`)
-    // Reload props halaman dari server (bukan navigasi Inertia dari respons
-    // fetch tadi -- fetch tsb JSON murni, bukan Inertia response).
     router.reload({ only: ['initialAlerts', 'initialMrpRun'] })
   } catch (error) {
     console.error('Dashboard MRP: gagal jalankan MRP ulang', error)
@@ -97,6 +112,75 @@ async function runMrpAgain() {
     isRunningMrp.value = false
   }
 }
+
+// Export Excel MRP Grid: endpoint JSON murni, WAJIB fetch() bukan
+// router.post() (lihat claude.md § Catatan Teknis Penting).
+const exporting = ref(false)
+let exportPollTimer = null
+let exportPollAttempts = 0
+const MAX_EXPORT_POLL_ATTEMPTS = 15 // 15 x 2s = 30 detik timeout
+
+async function exportMrpExcel() {
+  if (!latestMrpRunId.value || exporting.value) return
+  exporting.value = true
+  exportPollAttempts = 0
+
+  try {
+    const res = await fetch(`/exports/mrp/${latestMrpRunId.value}/excel`, {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content ?? '',
+        Accept: 'application/json',
+      },
+    })
+
+    if (!res.ok) {
+      const body = await res.json().catch(() => null)
+      alert(body?.message ?? 'Export gagal diproses. Coba lagi.')
+      exporting.value = false
+      return
+    }
+
+    pollExportStatus()
+  } catch {
+    alert('Gagal menghubungi server untuk export. Periksa koneksi Anda.')
+    exporting.value = false
+  }
+}
+
+function pollExportStatus() {
+  const mrpRunId = latestMrpRunId.value
+
+  exportPollTimer = setInterval(async () => {
+    exportPollAttempts++
+
+    try {
+      const res = await fetch(`/exports/mrp/${mrpRunId}/excel/status`, {
+        headers: { Accept: 'application/json' },
+      })
+      const data = await res.json()
+
+      if (data.ready && data.path) {
+        clearInterval(exportPollTimer)
+        exporting.value = false
+        window.location.href = `/exports/download?path=${encodeURIComponent(data.path)}`
+        return
+      }
+    } catch {
+      // Diamkan satu kegagalan poll, coba lagi di interval berikutnya.
+    }
+
+    if (exportPollAttempts >= MAX_EXPORT_POLL_ATTEMPTS) {
+      clearInterval(exportPollTimer)
+      exporting.value = false
+      alert('Export memakan waktu lebih lama dari biasanya. Coba lagi sesaat lagi.')
+    }
+  }, 2000)
+}
+
+onBeforeUnmount(() => {
+  if (exportPollTimer) clearInterval(exportPollTimer)
+})
 </script>
 
 <style scoped>
@@ -139,6 +223,13 @@ async function runMrpAgain() {
   max-width: 50ch;
 }
 
+.header-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
 .btn {
   padding: 0.5rem 1rem;
   font-size: 0.8125rem;
@@ -159,6 +250,21 @@ async function runMrpAgain() {
 }
 
 .btn--primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn--secondary {
+  background: #FFFFFF;
+  border-color: #E2E8F0;
+  color: #334155;
+}
+
+.btn--secondary:hover:not(:disabled) {
+  background: #F8FAFC;
+}
+
+.btn--secondary:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }

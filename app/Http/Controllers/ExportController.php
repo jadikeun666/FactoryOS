@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\ExportNotAllowedException;
+use App\Jobs\GenerateExcelMrpReportJob;
+use App\Jobs\GenerateExcelOeeTrendReportJob;
 use App\Jobs\GeneratePdfOeeReportJob;
 use App\Jobs\GeneratePdfReportJob;
+use App\Models\MrpRun;
+use App\Models\OeeSnapshot;
 use App\Models\ProductionLog;
 use App\Models\Schedule;
 use Illuminate\Http\JsonResponse;
@@ -99,6 +103,78 @@ class ExportController extends Controller
         $workCenterId = $validated['work_center_id'] ?? 'all';
 
         $path = Cache::get("export:oee_pdf:{$date}:{$workCenterId}:".auth()->id());
+
+        return response()->json([
+            'ready' => $path !== null,
+            'path'  => $path,
+        ]);
+    }
+
+    /**
+     * POST /exports/mrp/{mrpRun}/excel
+     */
+    public function mrpExcel(MrpRun $mrpRun): JsonResponse
+    {
+        if (! $mrpRun->requirements()->exists()) {
+            throw new ExportNotAllowedException('MRP Run belum memiliki requirements.');
+        }
+
+        GenerateExcelMrpReportJob::dispatch($mrpRun, auth()->id());
+
+        return response()->json(['message' => 'Export sedang diproses']);
+    }
+
+    /**
+     * GET /exports/mrp/{mrpRun}/excel/status
+     */
+    public function mrpExcelStatus(MrpRun $mrpRun): JsonResponse
+    {
+        $path = Cache::get("export:mrp_excel:{$mrpRun->id}:".auth()->id());
+
+        return response()->json([
+            'ready' => $path !== null,
+            'path'  => $path,
+        ]);
+    }
+
+    /**
+     * POST /exports/oee-trend/excel
+     *
+     * Body: month (required, format Y-m, mis. "2026-07").
+     */
+    public function oeeTrendExcel(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'month' => 'required|date_format:Y-m',
+        ]);
+
+        $from = Carbon::parse($validated['month'].'-01')->startOfMonth();
+        $to = $from->copy()->endOfMonth();
+
+        $hasSnapshots = OeeSnapshot::query()
+            ->whereDate('log_date', '>=', $from->toDateString())
+            ->whereDate('log_date', '<=', $to->toDateString())
+            ->exists();
+
+        if (! $hasSnapshots) {
+            throw new ExportNotAllowedException('Tidak ada data OEE untuk bulan ini.');
+        }
+
+        GenerateExcelOeeTrendReportJob::dispatch($from, $to, auth()->id());
+
+        return response()->json(['message' => 'Export sedang diproses']);
+    }
+
+    /**
+     * GET /exports/oee-trend/excel/status?month=2026-07
+     */
+    public function oeeTrendExcelStatus(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'month' => 'required|date_format:Y-m',
+        ]);
+
+        $path = Cache::get("export:oee_trend_excel:{$validated['month']}:".auth()->id());
 
         return response()->json([
             'ready' => $path !== null,
