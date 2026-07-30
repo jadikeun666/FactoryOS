@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use App\Models\Material;
 use Inertia\Inertia;
 use Inertia\Response as InertiaResponse;
+use Illuminate\Validation\ValidationException;
 
 /**
  * MrpController — thin controller untuk Engine 3 (MRP), pola identik
@@ -88,6 +89,52 @@ class MrpController extends Controller
 
         return response()->json($alerts);
     }
+
+    /**
+     * PATCH /mrp/alerts/{reorderAlert}/status
+     *
+     * Transisi status reorder alert: open -> acknowledged -> ordered.
+     * Otorisasi via ReorderAlertPolicy (hanya admin/PPIC, lihat Policy
+     * untuk konteks keputusan). Transisi WAJIB berurutan -- tidak boleh
+     * loncat (mis. open -> ordered langsung ditolak) dan tidak ada jalur
+     * mundur di v1 (keputusan disengaja, konsisten dengan filosofi
+     * Immutability Rules docs/engineering-rules.md § 2 -- kalau salah
+     * klik, alert baru akan terbit lagi otomatis via CheckReorderAlertsJob
+     * harian daripada membuka jalur mundur yang rawan disalahgunakan).
+     *
+     * Validasi transisi berurutan adalah business rule sederhana, bukan
+     * kalkulasi/formula engineering -- ditulis inline di controller sesuai
+     * pengecualian "query/logic sederhana boleh di controller" di
+     * docs/engineering-rules.md § 4 (pola sama seperti
+     * OeeController::latestSnapshotWithBenchmark()).
+     */
+    public function updateStatus(Request $request, ReorderAlert $reorderAlert): JsonResponse
+    {
+        $this->authorize('updateStatus', $reorderAlert);
+
+        $validated = $request->validate([
+            'status' => ['required', 'in:acknowledged,ordered'],
+        ]);
+
+        $allowedTransitions = [
+            'open' => 'acknowledged',
+            'acknowledged' => 'ordered',
+        ];
+
+        $expectedNext = $allowedTransitions[$reorderAlert->status] ?? null;
+
+        if ($expectedNext === null || $validated['status'] !== $expectedNext) {
+            throw ValidationException::withMessages([
+                'status' => "Transisi status tidak valid: alert berstatus '{$reorderAlert->status}' hanya boleh diubah ke '{$expectedNext}'.",
+            ]);
+        }
+
+        $reorderAlert->update(['status' => $validated['status']]);
+
+        return response()->json($reorderAlert->load('material'));
+    }
+
+    
     public function dashboard(): InertiaResponse
     {
         $latestMrpRun = MrpRun::query()
