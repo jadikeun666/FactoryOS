@@ -12,6 +12,7 @@ use App\Services\Scheduling\ScheduleApplierService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 /**
  * ScheduleController — thin controller sesuai docs/architecture.md § Controllers.
@@ -19,12 +20,16 @@ use Illuminate\Http\Request;
  * run() dan compareAll() adalah stub yang mendelegasikan ke
  * JobShopSchedulerService (sudah ada & teruji), disertakan di sini hanya
  * agar struktur controller sesuai spesifikasi di architecture.md.
- * ganttData() dan apply() diimplementasikan penuh.
+ * ganttData(), show(), dan apply() diimplementasikan penuh.
  *
  * run() men-dispatch ScheduleCreated setelah Schedule berhasil dibuat
  * (baru sesi 2026-07-20, lihat app/Events/ScheduleCreated.php) — memicu
  * TriggerMrpRunListener -> RunMrpJob sesuai docs/architecture.md dan
  * docs/engineering-rules.md § 9.
+ *
+ * show() dipindahkan dari closure inline di routes/web.php ke method
+ * controller sesungguhnya (sesi Soketi, item kecil #2) — murni kosmetik/
+ * konsistensi gaya Thin Controller, tidak ada perubahan behavior.
  */
 class ScheduleController extends Controller
 {
@@ -76,6 +81,25 @@ class ScheduleController extends Controller
     public function ganttData(Schedule $schedule): JsonResponse
     {
         return response()->json($this->gantt->build($schedule));
+    }
+
+    /**
+     * GET /schedules/{schedule}
+     *
+     * Menampilkan detail satu schedule beserta Gantt chart-nya, plus id
+     * schedule "saudara" (hasil run algoritma lain dari scheduled_from
+     * yang sama) untuk toggle SPT/EDD/CR/FIFO di Schedules/Show.vue.
+     */
+    public function show(Schedule $schedule): \Inertia\Response
+    {
+        $siblingIds = Schedule::query()
+            ->where('scheduled_from', $schedule->scheduled_from)
+            ->pluck('id', 'algorithm');
+
+        return Inertia::render('Schedules/Show', [
+            'initialData' => $this->gantt->build($schedule),
+            'scheduleIds' => $siblingIds,
+        ]);
     }
 
     /**

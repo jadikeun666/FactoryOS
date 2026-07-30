@@ -71,6 +71,9 @@ Route::middleware('auth')->group(function () {
         ->name('mrp.run');
     Route::get('/mrp/alerts', [MrpController::class, 'alerts'])
         ->name('mrp.alerts');
+
+    Route::patch('/mrp/alerts/{reorderAlert}/status', [MrpController::class, 'updateStatus'])
+        ->name('mrp.alerts.update-status');
     // Wildcard {mrpRun} didaftarkan SETELAH path statis /mrp/alerts dan
     // /mrp, konsisten dengan aturan ordering statis-sebelum-wildcard yang
     // sudah diterapkan di grup /schedules.
@@ -118,16 +121,8 @@ Route::middleware('auth')->group(function () {
     // sebelum wildcard {schedule} di bawah ini -- kalau tidak, Laravel akan
     // menangkap path seperti "/schedules/compare" sebagai {schedule}="compare"
     // dan meledak saat dipaksa jadi bigint di query SQL.
-    Route::get('/schedules/{schedule}', function (\App\Models\Schedule $schedule, \App\Services\Scheduling\GanttBuilderService $gantt) {
-        $siblingIds = \App\Models\Schedule::query()
-            ->where('scheduled_from', $schedule->scheduled_from)
-            ->pluck('id', 'algorithm');
-
-        return \Inertia\Inertia::render('Schedules/Show', [
-            'initialData' => $gantt->build($schedule),
-            'scheduleIds' => $siblingIds,
-        ]);
-    })->name('schedules.show');
+    Route::get('/schedules/{schedule}', [ScheduleController::class, 'show'])
+        ->name('schedules.show');
 });
 
 Route::middleware('auth')->group(function () {
