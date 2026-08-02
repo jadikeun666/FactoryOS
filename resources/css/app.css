@@ -1,3 +1,62 @@
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/700.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --font-display: 'JetBrains Mono', ui-monospace, monospace;
+  --font-body: 'Inter', system-ui, sans-serif;
+
+  --signal-amber: #E8A33D;
+  --signal-red: #D64545;
+  --signal-green: #4A9B6E;
+}
+
+[data-theme="dark"] {
+  --panel-graphite: #1C1F26;
+  --panel-graphite-raised: #23272F;
+  --surface-steel: #15181E;
+  --page-bg: #14161B;
+  --data-ink: #E8EAED;
+  --data-ink-inverse: #E8EAED;
+  --data-ink-muted: #8A93A3;
+  --hairline: rgba(255, 255, 255, 0.08);
+  --hairline-soft: rgba(255, 255, 255, 0.04);
+  --hairline-strong: #2E333D;
+  --hairline-border: rgba(255, 255, 255, 0.1);
+  --card-bg-start: #23272F;
+  --card-bg-end: #1C1F26;
+}
+
+[data-theme="light"] {
+  --panel-graphite: #FFFFFF;
+  --panel-graphite-raised: #FFFFFF;
+  --surface-steel: #F5F6F8;
+  --page-bg: #EEF0F3;
+  --data-ink: #1C1F26;
+  --data-ink-inverse: #1C1F26;
+  --data-ink-muted: #5B6472;
+  --hairline: #D8DCE3;
+  --hairline-soft: #E6E9ED;
+  --hairline-strong: #D8DCE3;
+  --hairline-border: rgba(0, 0, 0, 0.1);
+  --card-bg-start: #FFFFFF;
+  --card-bg-end: #FAFBFC;
+}
+
+body {
+  background: var(--page-bg);
+  transition: background-color 0.25s ease;
+}
+
+#theme-toggle-root {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 999;
+}
