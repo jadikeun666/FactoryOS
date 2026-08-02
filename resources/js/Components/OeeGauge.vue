@@ -15,10 +15,20 @@
     <template v-else>
       <div class="main-gauge">
         <svg ref="svgRef" viewBox="0 0 200 120" class="arc-svg">
+          <g class="dial-ticks" aria-hidden="true">
+            <line
+              v-for="tick in dialTicks"
+              :key="tick.angle"
+              :x1="tick.x1" :y1="tick.y1" :x2="tick.x2" :y2="tick.y2"
+              :stroke-width="tick.major ? 2 : 1"
+              class="dial-tick"
+              :class="{ 'dial-tick--major': tick.major }"
+            />
+          </g>
           <path
             d="M 20 100 A 80 80 0 0 1 180 100"
             fill="none"
-            stroke="#E2E8F0"
+            stroke="var(--hairline-strong)"
             stroke-width="14"
             stroke-linecap="round"
           />
@@ -95,16 +105,7 @@
  * event `oee.updated` (broadcastAs custom -> WAJIB pakai titik di depan
  * saat listen(), lihat app/Events/OeeUpdated.php).
  *
- * ASUMSI props initialSnapshot: shape sama seperti payload broadcastWith()
- * di OeeUpdated.php -> { work_center_id, log_date, shift_id, availability,
- * performance, quality, oee, computed_at } (semua rasio dikirim sebagai
- * string dari backend, bukan number).
- *
- * CATATAN: BROADCAST_CONNECTION backend masih 'log' di sesi ini (lihat
- * claude.md) -- komponen ini sudah siap pakai Echo, tapi tidak akan
- * menerima event nyata sampai Soketi diaktifkan di sesi lain. Badge
- * "Live/Offline" akan tetap menunjukkan status koneksi Echo yang
- * sebenarnya, jadi ini bukan bug -- itu memang belum terhubung.
+ * Soketi AKTIF & PERMANEN via Supervisor (factoryos-soketi.conf).
  */
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 
@@ -132,7 +133,6 @@ const oeeRatio = computed(() => {
 
 const oeeColor = computed(() => metricColor(snapshot.value?.oee, WORLD_CLASS_OEE))
 
-// Arc dari 0 (awal semicircle) sampai proporsi oeeRatio; total sweep 180°.
 const arcPath = computed(() => {
   const sweepDeg = 180 * oeeRatio.value
   const angleRad = (Math.PI * sweepDeg) / 180
@@ -147,6 +147,28 @@ const arcPath = computed(() => {
   return `M ${startX} ${startY} A ${r} ${r} 0 ${largeArc} 1 ${endX} ${endY}`
 })
 
+const dialTicks = computed(() => {
+  const cx = 100
+  const cy = 100
+  const rOuter = 92
+  const ticks = []
+  for (let i = 0; i <= 10; i++) {
+    const deg = 180 - i * 18
+    const rad = (Math.PI * deg) / 180
+    const major = i % 5 === 0
+    const rInner = major ? 80 : 85
+    ticks.push({
+      angle: deg,
+      major,
+      x1: cx - rInner * Math.cos(rad),
+      y1: cy - rInner * Math.sin(rad),
+      x2: cx - rOuter * Math.cos(rad),
+      y2: cy - rOuter * Math.sin(rad),
+    })
+  }
+  return ticks
+})
+
 function formatPercent(value) {
   const n = toNumber(value)
   if (n === null) return '–'
@@ -159,13 +181,12 @@ function percentWidth(value) {
   return `${Math.min(Math.max(n * 100, 0), 100)}%`
 }
 
-// Hijau jika >= world class, kuning jika di rentang typical (>=0.6 dari target), merah jika di bawah itu.
 function metricColor(value, worldClassTarget) {
   const n = toNumber(value)
-  if (n === null) return '#94A3B8'
-  if (n >= worldClassTarget) return '#16A34A'
-  if (n >= worldClassTarget * 0.7) return '#D97706'
-  return '#DC2626'
+  if (n === null) return '#6B7280'
+  if (n >= worldClassTarget) return '#4A9B6E'
+  if (n >= worldClassTarget * 0.7) return '#E8A33D'
+  return '#D64545'
 }
 
 function formatDateTime(iso) {
@@ -193,8 +214,6 @@ function subscribe(workCenterId) {
     console.error('OeeGauge: gagal subscribe channel work-center.' + workCenterId, error)
   })
 
-  // Titik di depan WAJIB karena OeeUpdated::broadcastAs() memakai nama
-  // kustom 'oee.updated' (bukan default namespaced App\Events\OeeUpdated).
   channel.listen('.oee.updated', (event) => {
     if (event?.snapshot) {
       snapshot.value = event.snapshot
@@ -222,11 +241,12 @@ watch(() => props.initialSnapshot, (val) => {
 .oee-gauge {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1.25rem;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-radius: 10px;
+  gap: 1.1rem;
+  padding: 1.35rem 1.25rem;
+  background: linear-gradient(180deg, var(--card-bg-start) 0%, var(--card-bg-end) 100%);
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .gauge-header {
@@ -236,33 +256,39 @@ watch(() => props.initialSnapshot, (val) => {
 }
 
 .gauge-title {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #0F172A;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--data-ink-inverse);
 }
 
 .live-indicator {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.6875rem;
+  font-family: var(--font-body);
+  font-size: 0.625rem;
   font-weight: 600;
-  color: #94A3B8;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--data-ink-muted);
 }
 
 .live-dot {
-  width: 0.5rem;
-  height: 0.5rem;
+  width: 0.4rem;
+  height: 0.4rem;
   border-radius: 999px;
-  background: #CBD5E1;
+  background: var(--hairline-strong);
 }
 
 .live-indicator--connected {
-  color: #16A34A;
+  color: var(--signal-green);
 }
 
 .live-indicator--connected .live-dot {
-  background: #22C55E;
+  background: var(--signal-green);
+  box-shadow: 0 0 6px 0 rgba(74, 155, 110, 0.7);
   animation: pulse-dot 1.6s ease-in-out infinite;
 }
 
@@ -270,11 +296,15 @@ watch(() => props.initialSnapshot, (val) => {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.35; }
 }
+@media (prefers-reduced-motion: reduce) {
+  .live-indicator--connected .live-dot { animation: none; }
+}
 
 .gauge-empty {
   padding: 2rem 1rem;
   text-align: center;
-  color: #94A3B8;
+  font-family: var(--font-body);
+  color: var(--data-ink-muted);
   font-size: 0.8125rem;
 }
 
@@ -288,6 +318,13 @@ watch(() => props.initialSnapshot, (val) => {
   width: 100%;
   max-width: 240px;
   height: auto;
+}
+
+.dial-tick {
+  stroke: var(--hairline);
+}
+.dial-tick--major {
+  stroke: var(--data-ink-muted);
 }
 
 .arc-fill {
@@ -305,55 +342,60 @@ watch(() => props.initialSnapshot, (val) => {
 }
 
 .gauge-value__number {
-  font-size: 1.75rem;
+  font-family: var(--font-display);
+  font-size: 1.875rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .gauge-value__label {
-  font-size: 0.6875rem;
+  font-family: var(--font-body);
+  font-size: 0.625rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #94A3B8;
+  color: var(--data-ink-muted);
 }
 
 .sub-metrics {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.7rem;
 }
 
 .metric-bar__header {
   display: flex;
   justify-content: space-between;
+  font-family: var(--font-body);
   font-size: 0.75rem;
-  color: #475569;
-  margin-bottom: 0.25rem;
+  color: var(--data-ink-muted);
+  margin-bottom: 0.3rem;
 }
 
 .metric-bar__header span:last-child {
+  font-family: var(--font-display);
   font-weight: 600;
-  color: #0F172A;
+  color: var(--data-ink-inverse);
   font-variant-numeric: tabular-nums;
 }
 
 .metric-bar__track {
-  height: 0.4rem;
-  border-radius: 999px;
-  background: #F1F5F9;
+  height: 0.375rem;
+  border-radius: 2px;
+  background: var(--hairline-strong);
   overflow: hidden;
 }
 
 .metric-bar__fill {
   height: 100%;
-  border-radius: 999px;
+  border-radius: 2px;
   transition: width 0.4s ease, background-color 0.4s ease;
 }
 
 .last-updated {
+  font-family: var(--font-display);
   font-size: 0.6875rem;
-  color: #94A3B8;
+  color: var(--data-ink-muted);
   margin: 0;
   text-align: center;
 }
