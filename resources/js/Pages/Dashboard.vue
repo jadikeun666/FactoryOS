@@ -1,13 +1,15 @@
 <template>
   <div class="dashboard-page">
     <header class="dashboard-page__header">
+      <span class="dashboard-page__eyebrow">FactoryOS — Ruang Kontrol</span>
       <h1>Dashboard KPI</h1>
       <p class="dashboard-page__subtitle">Ringkasan lintas Scheduling, OEE, dan Inventory</p>
     </header>
 
-    <!-- ENGINE 1 — Job Shop Scheduler -->
     <section class="dashboard-section">
-      <h2 class="dashboard-section__title">Engine 1 — Penjadwalan</h2>
+      <h2 class="dashboard-section__title">
+        <span class="dashboard-section__index">01</span>Engine 1 — Penjadwalan
+      </h2>
       <div class="dashboard-grid">
         <KpiCard
           label="WO Aktif"
@@ -36,9 +38,10 @@
       </div>
     </section>
 
-    <!-- ENGINE 2 — OEE & Downtime -->
     <section class="dashboard-section">
-      <h2 class="dashboard-section__title">Engine 2 — OEE</h2>
+      <h2 class="dashboard-section__title">
+        <span class="dashboard-section__index">02</span>Engine 2 — OEE
+      </h2>
       <div class="dashboard-grid">
         <KpiCard
           v-if="engine2.avg_oee_today !== null"
@@ -63,9 +66,10 @@
       </div>
     </section>
 
-    <!-- ENGINE 3 — Inventory Optimizer -->
     <section class="dashboard-section">
-      <h2 class="dashboard-section__title">Engine 3 — Inventory</h2>
+      <h2 class="dashboard-section__title">
+        <span class="dashboard-section__index">03</span>Engine 3 — Inventory
+      </h2>
       <div class="dashboard-grid">
         <KpiCard
           label="Reorder Alert Terbuka"
@@ -105,73 +109,130 @@ function oeeTone(oee) {
 
 <style scoped>
 .dashboard-page {
-  padding: 1.5rem;
+  padding: 2rem 1.5rem 3rem;
   max-width: 1100px;
   margin: 0 auto;
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 500px at 20% -10%, rgba(74, 155, 110, 0.06), transparent 60%),
+    var(--surface-steel);
+  transition: background-color 0.25s ease;
+}
+
+.dashboard-page__header {
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--hairline-strong);
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-page__eyebrow {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--signal-green);
+  margin-bottom: 0.4rem;
 }
 
 .dashboard-page__header h1 {
-  font-size: 1.5rem;
+  font-family: var(--font-body);
+  font-size: 1.75rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   margin: 0;
+  letter-spacing: -0.01em;
 }
 
 .dashboard-page__subtitle {
-  color: #64748B;
+  font-family: var(--font-body);
+  color: var(--data-ink-muted);
   font-size: 0.875rem;
-  margin-top: 0.25rem;
+  margin-top: 0.35rem;
 }
 
 .dashboard-section {
-  margin-top: 2rem;
+  margin-top: 2.25rem;
 }
 
 .dashboard-section__title {
-  font-size: 1rem;
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
   font-weight: 600;
-  color: #334155;
-  margin-bottom: 0.75rem;
+  color: var(--data-ink);
+  margin-bottom: 0.85rem;
+}
+
+.dashboard-section__index {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--data-ink-muted);
+  letter-spacing: 0.05em;
 }
 
 .dashboard-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.75rem;
+  gap: 0.85rem;
 }
 
-.dashboard-empty-card,
-.dashboard-info-card {
+.dashboard-empty-card {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 0.25rem;
-  padding: 0.85rem 1rem;
-  background: #F8FAFC;
-  border: 1px dashed #CBD5E1;
-  border-radius: 10px;
-  color: #64748B;
+  padding: 0.85rem 1.15rem;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--hairline-soft),
+    var(--hairline-soft) 8px,
+    var(--hairline) 8px,
+    var(--hairline) 16px
+  );
+  border: 1px dashed var(--hairline-strong);
+  border-radius: 4px;
+  color: var(--data-ink-muted);
+  font-family: var(--font-body);
   font-size: 0.8125rem;
 }
 
 .dashboard-info-card {
-  border-style: solid;
-  background: #FFFFFF;
-  border-color: #E5E7EB;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1rem 1.15rem;
+  background: linear-gradient(180deg, var(--card-bg-start) 0%, var(--card-bg-end) 100%);
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--signal-amber);
+  border-radius: 4px;
 }
 
 .dashboard-info-card__label {
-  font-size: 0.75rem;
-  color: #64748B;
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--data-ink-muted);
 }
 
 .dashboard-info-card__value {
-  font-size: 1.125rem;
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink-inverse);
 }
 
 .dashboard-info-card__sub {
-  font-size: 0.75rem;
-  color: #94A3B8;
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--signal-amber);
 }
 </style>
