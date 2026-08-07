@@ -153,36 +153,22 @@ Route::middleware('auth')->group(function () {
         ->name('products.routings.destroy');
 });
 
-Route::middleware('auth')->group(function () {
-    Route::post('/exports/schedule/{schedule}/pdf', [ExportController::class, 'schedulePdf'])
-        ->name('exports.schedule.pdf');
-    Route::get('/exports/download', [ExportController::class, 'download'])
-        ->name('exports.download');
-});
 
 Route::middleware('auth')->group(function () {
     Route::post('/exports/schedule/{schedule}/pdf', [ExportController::class, 'schedulePdf'])
         ->name('exports.schedule.pdf');
     Route::get('/exports/schedule/{schedule}/pdf/status', [ExportController::class, 'schedulePdfStatus'])
         ->name('exports.schedule.pdf.status');
-    Route::get('/exports/download', [ExportController::class, 'download'])
-        ->name('exports.download');
-});
-
-Route::middleware('auth')->group(function () {
-    Route::post('/exports/schedule/{schedule}/pdf', [ExportController::class, 'schedulePdf'])
-        ->name('exports.schedule.pdf');
-    Route::get('/exports/schedule/{schedule}/pdf/status', [ExportController::class, 'schedulePdfStatus'])
-        ->name('exports.schedule.pdf.status');
-
     Route::post('/exports/oee/pdf', [ExportController::class, 'oeePdf'])
         ->name('exports.oee.pdf');
     Route::get('/exports/oee/pdf/status', [ExportController::class, 'oeePdfStatus'])
         ->name('exports.oee.pdf.status');
-
     Route::get('/exports/download', [ExportController::class, 'download'])
         ->name('exports.download');
 });
+
+
+
 
 Route::middleware('auth')->group(function () {
     Route::post('/exports/mrp/{mrpRun}/excel', [ExportController::class, 'mrpExcel'])
