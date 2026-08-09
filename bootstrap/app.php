@@ -22,5 +22,15 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
-    })->create();
-
+    })
+    // Auto-discovery event/listener DIMATIKAN eksplisit (root cause bug
+    // double-dispatch oee.updated, ditemukan & fix 2026-08-09): tanpa ini,
+    // Laravel 12 otomatis scan app/Listeners/ dan mendaftarkan listener
+    // yang polanya sesuai konvensi (method handle() dengan type-hint event)
+    // DI ATAS registrasi manual Event::listen() di AppServiceProvider::boot()
+    // -- hasilnya listener yang sama terdaftar dua kali untuk event yang
+    // sama. Konfirmasi via `php artisan event:list` (listener duncul 2x)
+    // dan Log::info diagnostik di listener (handle() dieksekusi 2x per
+    // 1 dispatch event). @see docs/architecture.md § Events & Listeners
+    ->withEvents(discover: false)
+    ->create();
