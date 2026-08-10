@@ -69,8 +69,22 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+/**
+ * ASUMSI: controller merender halaman ini via Inertia dengan props:
+ *   initialData:  hasil GanttBuilderService::build($schedule) (format docs/gantt.md)
+ *   scheduleIds:  { spt: 1, edd: 2, cr: 3, fifo: 4 } — dipakai GanttChart
+ *                 untuk toggle antar algoritma tanpa reload halaman
+ *
+ * MODERNISASI VISUAL TAHAP 2 (2026-08-09): warna SVG di-generate lewat D3
+ * (bukan CSS murni), jadi tidak otomatis ikut var(--token) saat tema di-
+ * toggle. Fix: cssVar() membaca nilai token dari getComputedStyle saat
+ * renderGantt() dipanggil, dan watch(theme, ...) memicu render ulang tiap
+ * kali tema berganti. Ini SATU-SATUNYA penambahan JS di file ini — semua
+ * logic scheduling/zoom/tooltip/seleksi WO yang sudah ada TIDAK diubah.
+ */
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import * as d3 from 'd3'
+import { useTheme } from '@/composables/useTheme'
 
 const props = defineProps({
   initialData: { type: Object, required: true },   // data dari server-side render pertama (format docs/gantt.md)
@@ -81,6 +95,8 @@ const props = defineProps({
     default: (scheduleId) => `/api/schedules/${scheduleId}/gantt-data`,
   },
 })
+
+const { theme } = useTheme()
 
 const algorithms = ['spt', 'edd', 'cr', 'fifo']
 
@@ -102,6 +118,26 @@ let xScale = null
 let yScale = null
 let colorScaleFn = null
 let tooltipEl = null
+
+// Palet industrial untuk 10 Work Order — dipilih agar kontras cukup di
+// kedua mode tema (bukan warna default D3 schemeTableau10), selaras
+// dengan nuansa graphite/steel/signal yang sudah dipakai KpiCard/OeeGauge.
+const WO_PALETTE = [
+  '#5B8DEF', // steel blue
+  '#E8A33D', // signal amber (reuse)
+  '#4A9B6E', // signal green (reuse)
+  '#C2618D', // mauve
+  '#6FA8B5', // teal steel
+  '#B98C4A', // bronze
+  '#8B7FD1', // violet steel
+  '#7FA65C', // olive
+  '#D68A5C', // rust
+  '#5C7A99', // slate blue
+]
+
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
 
 function colorScale(workOrderId) {
   return colorScaleFn ? colorScaleFn(workOrderId) : '#94A3B8'
@@ -179,6 +215,14 @@ function renderGantt() {
   const rowCount = Math.max(data.work_centers.length, 1)
   const height = MARGIN.top + MARGIN.bottom + rowCount * ROW_HEIGHT
 
+  // Token warna dibaca ulang tiap render, supaya SVG selalu sinkron
+  // dengan tema aktif (dark/light) saat ini.
+  const colorLateSignal = cssVar('--signal-red') || '#D64545'
+  const colorAxisText = cssVar('--data-ink-muted') || '#64748B'
+  const colorAxisLine = cssVar('--hairline-strong') || '#CBD5E1'
+  const colorLabel = cssVar('--data-ink') || '#334155'
+  const colorRowDivider = cssVar('--hairline-soft') || '#F1F5F9'
+
   // domain waktu penuh: dari scheduled_from sampai end_at terjauh
   const scheduledFrom = new Date(data.schedule.scheduled_from)
   const maxEnd = d3.max(data.assignments, (d) => new Date(d.end_at))
@@ -213,15 +257,17 @@ function renderGantt() {
     .range([MARGIN.top, height])
     .padding(0.25)
 
-  colorScaleFn = d3.scaleOrdinal(d3.schemeTableau10)
+  colorScaleFn = d3.scaleOrdinal(WO_PALETTE)
     .domain(data.work_orders.map((wo) => wo.id))
 
   // Sumbu waktu di atas
   const xAxis = d3.axisTop(xScale).ticks(Math.max(width / 120, 4)).tickFormat(d3.timeFormat('%H:%M'))
-  svg.append('g')
+  const xAxisG = svg.append('g')
     .attr('class', 'x-axis')
     .attr('transform', `translate(0, ${MARGIN.top})`)
     .call(xAxis)
+  xAxisG.selectAll('text').attr('fill', colorAxisText)
+  xAxisG.selectAll('path, line').attr('stroke', colorAxisLine)
 
   // Label mesin di kiri
   svg.append('g')
@@ -234,6 +280,7 @@ function renderGantt() {
     .attr('dy', '0.35em')
     .attr('text-anchor', 'end')
     .attr('class', 'wc-label')
+    .attr('fill', colorLabel)
     .text((d) => d.name)
 
   // Garis pemisah baris per mesin
@@ -242,6 +289,7 @@ function renderGantt() {
     .data(data.work_centers)
     .join('line')
     .attr('class', 'row-divider')
+    .attr('stroke', colorRowDivider)
     .attr('x1', MARGIN.left)
     .attr('x2', width - MARGIN.right)
     .attr('y1', (d) => yScale(d.id) + yScale.bandwidth() + yScale.paddingOuter() * yScale.step() / 2)
@@ -257,6 +305,7 @@ function renderGantt() {
     .data(data.work_orders.filter((wo) => wo.due_date))
     .join('line')
     .attr('class', 'due-date-line')
+    .attr('stroke', colorLateSignal)
     .attr('x1', (d) => xScale(new Date(d.due_date)))
     .attr('x2', (d) => xScale(new Date(d.due_date)))
     .attr('y1', MARGIN.top)
@@ -276,7 +325,7 @@ function renderGantt() {
     .attr('width', (d) => Math.max(xScale(new Date(d.end_at)) - xScale(new Date(d.start_at)), 1))
     .attr('height', yScale.bandwidth())
     .attr('rx', 3)
-    .attr('fill', (d) => (d.is_late ? '#EF4444' : colorScaleFn(d.work_order_id)))
+    .attr('fill', (d) => (d.is_late ? colorLateSignal : colorScaleFn(d.work_order_id)))
     .attr('opacity', 0.85)
     .style('cursor', 'pointer')
     .on('mouseover', (event, d) => {
@@ -308,6 +357,8 @@ function renderGantt() {
     .on('zoom', (event) => {
       const newX = event.transform.rescaleX(xScale)
       svg.select('.x-axis').call(d3.axisTop(newX).ticks(Math.max(width / 120, 4)).tickFormat(d3.timeFormat('%H:%M')))
+      svg.select('.x-axis').selectAll('text').attr('fill', colorAxisText)
+      svg.select('.x-axis').selectAll('path, line').attr('stroke', colorAxisLine)
       plotArea.selectAll('rect.assignment')
         .attr('x', (d) => newX(new Date(d.start_at)))
         .attr('width', (d) => Math.max(newX(new Date(d.end_at)) - newX(new Date(d.start_at)), 1))
@@ -341,6 +392,9 @@ onBeforeUnmount(() => {
 
 watch(ganttData, () => nextTick(() => renderGantt()))
 watch(selectedWorkOrderId, () => applySelectionStyles())
+// Re-render supaya warna SVG (axis/label/divider/late-signal) sinkron
+// dengan token tema baru saat user toggle dark/light.
+watch(theme, () => nextTick(() => renderGantt()))
 </script>
 
 <style scoped>
@@ -348,23 +402,26 @@ watch(selectedWorkOrderId, () => applySelectionStyles())
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  font-family: var(--font-body);
 }
 
 .algo-toggle {
   display: inline-flex;
   gap: 0.25rem;
   padding: 0.25rem;
-  background: #F1F5F9;
+  background: var(--surface-steel);
+  border: 1px solid var(--hairline);
   border-radius: 8px;
   width: fit-content;
 }
 
 .algo-btn {
   padding: 0.4rem 0.9rem;
-  font-size: 0.8125rem;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  color: #475569;
+  letter-spacing: 0.04em;
+  color: var(--data-ink-muted);
   background: transparent;
   border: none;
   border-radius: 6px;
@@ -373,7 +430,7 @@ watch(selectedWorkOrderId, () => applySelectionStyles())
 }
 
 .algo-btn:hover:not(:disabled) {
-  background: #E2E8F0;
+  background: var(--hairline-soft);
 }
 
 .algo-btn:disabled {
@@ -382,13 +439,14 @@ watch(selectedWorkOrderId, () => applySelectionStyles())
 }
 
 .algo-btn--active {
-  background: #1E293B;
-  color: #F8FAFC;
+  background: var(--panel-graphite);
+  color: var(--signal-amber);
+  box-shadow: 0 0 0 1px var(--hairline-border);
 }
 
 .algo-btn:focus-visible,
 .wo-legend__item:focus-visible {
-  outline: 2px solid #F59E0B;
+  outline: 2px solid var(--signal-amber);
   outline-offset: 2px;
 }
 
@@ -403,25 +461,26 @@ watch(selectedWorkOrderId, () => applySelectionStyles())
   flex-direction: column;
   gap: 0.25rem;
   padding: 0.75rem 1rem;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--panel-graphite);
+  border: 1px solid var(--hairline-border);
   border-radius: 8px;
 }
 
 .kpi-card__label {
   font-size: 0.75rem;
-  color: #64748B;
+  color: var(--data-ink-muted);
 }
 
 .kpi-card__value {
+  font-family: var(--font-display);
   font-size: 1.25rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   font-variant-numeric: tabular-nums;
 }
 
-.kpi-card--warn .kpi-card__value { color: #B45309; }
-.kpi-card--danger .kpi-card__value { color: #DC2626; }
+.kpi-card--warn .kpi-card__value { color: var(--signal-amber); }
+.kpi-card--danger .kpi-card__value { color: var(--signal-red); }
 
 .wo-legend {
   display: flex;
@@ -435,12 +494,16 @@ watch(selectedWorkOrderId, () => applySelectionStyles())
   gap: 0.4rem;
   padding: 0.25rem 0.6rem;
   font-size: 0.75rem;
-  color: #334155;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  color: var(--data-ink-muted);
+  background: var(--surface-steel);
+  border: 1px solid var(--hairline);
   border-radius: 999px;
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.wo-legend__item:hover {
+  background: var(--hairline-soft);
 }
 
 .wo-legend__item--dimmed {
@@ -456,11 +519,11 @@ watch(selectedWorkOrderId, () => applySelectionStyles())
 }
 
 .wo-legend__swatch--late {
-  background: #EF4444;
+  background: var(--signal-red);
 }
 
 .wo-legend__late-tag {
-  color: #DC2626;
+  color: var(--signal-red);
   font-weight: 600;
 }
 
@@ -468,63 +531,60 @@ watch(selectedWorkOrderId, () => applySelectionStyles())
   position: relative;
   min-height: 240px;
   overflow-x: auto;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--hairline-border);
   border-radius: 8px;
   padding: 12px 8px;
-  background: #FFFFFF;
+  background: var(--panel-graphite);
 }
 
 .gantt-loading,
 .gantt-empty {
   padding: 2.5rem 1rem;
   text-align: center;
-  color: #64748B;
+  color: var(--data-ink-muted);
   font-size: 0.875rem;
 }
 
 :deep(.wc-label) {
+  font-family: var(--font-body);
   font-size: 0.75rem;
-  fill: #334155;
 }
 
 :deep(.x-axis text) {
+  font-family: var(--font-display);
   font-size: 0.6875rem;
-  fill: #64748B;
-}
-
-:deep(.x-axis path),
-:deep(.x-axis line) {
-  stroke: #CBD5E1;
 }
 
 :deep(.row-divider) {
-  stroke: #F1F5F9;
   stroke-width: 1;
 }
 
 :deep(.due-date-line) {
-  stroke: #EF4444;
   stroke-width: 1.5;
   stroke-dasharray: 4 3;
   opacity: 0.7;
 }
 
 :deep(.assignment--late) {
-  stroke: #B91C1C;
+  stroke: var(--signal-red);
   stroke-width: 1;
 }
 </style>
 
 <style>
-/* Tooltip di-append ke <body>, jadi styling-nya global (bukan scoped) */
+/* Tooltip di-append ke <body>, jadi styling-nya global (bukan scoped).
+   Tetap ikut var(--token) karena data-theme ada di <html>, dan tooltip
+   sebagai child <body> ikut mewarisi custom property tersebut. */
 .gantt-tooltip {
-  background: #0F172A;
-  color: #F8FAFC;
+  font-family: var(--font-body);
+  background: var(--panel-graphite-raised);
+  color: var(--data-ink);
+  border: 1px solid var(--hairline-border);
   border-radius: 6px;
   padding: 8px 12px;
   font-size: 0.75rem;
   line-height: 1.4;
-  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
   z-index: 9999;
   pointer-events: none;
 }
