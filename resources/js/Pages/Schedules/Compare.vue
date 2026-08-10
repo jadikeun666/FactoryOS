@@ -126,6 +126,10 @@
  *    terkecil, tie-break dengan makespan_minutes terkecil. Ini heuristik
  *    tampilan saja, bukan logic bisnis — keputusan akhir tetap di tangan
  *    user (docs/scheduling.md: "User memilih algoritma terbaik").
+ *
+ * MODERNISASI VISUAL TAHAP 2 (2026-08-09): hanya template struktur & CSS
+ * yang diganti ke var(--token) dual-mode. TIDAK ADA perubahan logic JS
+ * (computed/ref/fungsi) di file ini.
  */
 import { computed, ref } from 'vue'
 import { Link, router } from '@inertiajs/vue3'
@@ -207,6 +211,7 @@ function applySchedule() {
   padding: 1.5rem;
   max-width: 1100px;
   margin: 0 auto;
+  font-family: var(--font-body);
 }
 
 .page-header {
@@ -217,24 +222,26 @@ function applySchedule() {
 }
 
 .page-eyebrow {
+  font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #F59E0B;
+  color: var(--signal-amber);
   margin: 0 0 0.25rem;
 }
 
 .page-title {
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   margin: 0;
 }
 
 .page-subtitle {
   font-size: 0.875rem;
-  color: #64748B;
+  color: var(--data-ink-muted);
   margin: 0.35rem 0 0;
   max-width: 46ch;
 }
@@ -244,6 +251,7 @@ function applySchedule() {
   align-items: center;
   gap: 0.4rem;
   padding: 0.5rem 1rem;
+  font-family: var(--font-display);
   font-size: 0.8125rem;
   font-weight: 600;
   border-radius: 8px;
@@ -255,21 +263,21 @@ function applySchedule() {
 .btn:active { transform: translateY(1px); }
 
 .btn--ghost {
-  background: #FFFFFF;
-  border-color: #E2E8F0;
-  color: #334155;
+  background: var(--panel-graphite);
+  border-color: var(--hairline-border);
+  color: var(--data-ink-muted);
   text-decoration: none;
 }
 
-.btn--ghost:hover { background: #F8FAFC; }
+.btn--ghost:hover { background: var(--surface-steel); }
 
 .btn--primary {
-  background: #0F172A;
-  color: #F8FAFC;
+  background: var(--signal-amber);
+  color: #1C1F26;
 }
 
 .btn--primary:hover:not(:disabled) {
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25);
+  filter: brightness(1.08);
 }
 
 .btn--primary:disabled {
@@ -291,8 +299,8 @@ function applySchedule() {
   flex-direction: column;
   gap: 0.75rem;
   padding: 1.1rem;
-  background: #FFFFFF;
-  border: 1.5px solid #E5E7EB;
+  background: var(--panel-graphite);
+  border: 1.5px solid var(--hairline-border);
   border-radius: 12px;
   cursor: pointer;
   font: inherit;
@@ -307,29 +315,29 @@ function applySchedule() {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .algo-card, .kpi-card { animation: none; }
+  .algo-card { animation: none; }
 }
 
 .algo-card:hover {
-  border-color: #CBD5E1;
+  border-color: var(--hairline-strong);
   transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
 }
 
 .algo-card--selected {
-  border-color: #F59E0B;
-  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+  border-color: var(--signal-amber);
+  box-shadow: 0 0 0 3px rgba(232, 163, 61, 0.18);
 }
 
 .algo-card--winner {
-  border-color: #16A34A;
+  border-color: var(--signal-green);
 }
 
 .algo-card__ribbon {
   position: absolute;
   top: -0.6rem;
   right: 0.9rem;
-  background: #16A34A;
+  background: var(--signal-green);
   color: #F0FDF4;
   font-size: 0.6875rem;
   font-weight: 700;
@@ -340,8 +348,8 @@ function applySchedule() {
 }
 
 @keyframes ribbon-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.35); }
-  50%      { box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 155, 110, 0.35); }
+  50%      { box-shadow: 0 0 0 6px rgba(74, 155, 110, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -355,9 +363,10 @@ function applySchedule() {
 }
 
 .algo-card__name {
+  font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   letter-spacing: 0.02em;
 }
 
@@ -365,18 +374,18 @@ function applySchedule() {
   width: 1.1rem;
   height: 1.1rem;
   border-radius: 999px;
-  border: 2px solid #CBD5E1;
+  border: 2px solid var(--hairline-strong);
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .algo-card__radio--checked {
-  border-color: #F59E0B;
-  background: radial-gradient(circle, #F59E0B 0 40%, transparent 42%);
+  border-color: var(--signal-amber);
+  background: radial-gradient(circle, var(--signal-amber) 0 40%, transparent 42%);
 }
 
 .algo-card__desc {
   font-size: 0.75rem;
-  color: #64748B;
+  color: var(--data-ink-muted);
   margin: 0;
   min-height: 2.1em;
 }
@@ -390,7 +399,7 @@ function applySchedule() {
 
 .metric-row dt {
   font-size: 0.6875rem;
-  color: #94A3B8;
+  color: var(--data-ink-muted);
   margin-bottom: 0.2rem;
 }
 
@@ -402,9 +411,10 @@ function applySchedule() {
 }
 
 .metric-row__value {
+  font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 600;
-  color: #334155;
+  color: var(--data-ink);
   width: 5.5rem;
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
@@ -413,7 +423,7 @@ function applySchedule() {
 .metric-row__bar-track {
   flex: 1;
   height: 6px;
-  background: #F1F5F9;
+  background: var(--hairline-soft);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -421,7 +431,7 @@ function applySchedule() {
 .metric-row__bar-fill {
   display: block;
   height: 100%;
-  background: #94A3B8;
+  background: var(--hairline-strong);
   border-radius: 999px;
   width: 0;
   animation: bar-fill 0.6s ease both;
@@ -437,20 +447,21 @@ function applySchedule() {
 }
 
 .metric-row__bar-fill--best {
-  background: #16A34A;
+  background: var(--signal-green);
 }
 
 /* Tabel Detail */
 .section-title {
+  font-family: var(--font-display);
   font-size: 0.9375rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   margin: 0 0 0.6rem;
 }
 
 .detail-table-wrapper {
   overflow-x: auto;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--hairline-border);
   border-radius: 10px;
 }
 
@@ -464,27 +475,32 @@ function applySchedule() {
 .detail-table td {
   padding: 0.6rem 0.9rem;
   text-align: left;
-  border-bottom: 1px solid #F1F5F9;
+  border-bottom: 1px solid var(--hairline-soft);
   white-space: nowrap;
 }
 
 .detail-table thead th {
-  color: #64748B;
+  color: var(--data-ink-muted);
   font-weight: 600;
-  background: #F8FAFC;
+  background: var(--surface-steel);
 }
 
 .detail-table tbody th {
-  color: #334155;
+  color: var(--data-ink);
   font-weight: 500;
 }
 
 .detail-table__col--selected {
-  background: rgba(245, 158, 11, 0.06);
+  background: rgba(232, 163, 61, 0.08);
+}
+
+
+.detail-table td {
+  color: var(--data-ink);
 }
 
 .detail-table__cell--best {
-  color: #15803D;
+  color: var(--signal-green);
   font-weight: 700;
 }
 
@@ -492,7 +508,7 @@ function applySchedule() {
   margin-left: 0.35rem;
   font-size: 0.625rem;
   font-weight: 600;
-  color: #16A34A;
+  color: var(--signal-green);
 }
 
 /* Apply bar */
@@ -504,10 +520,12 @@ function applySchedule() {
   justify-content: space-between;
   gap: 1rem;
   padding: 0.85rem 1.1rem;
-  background: #0F172A;
-  color: #E2E8F0;
+  background: var(--panel-graphite-raised);
+  border: 1px solid var(--hairline-border);
+  color: var(--data-ink);
   border-radius: 12px;
   font-size: 0.8125rem;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
   opacity: 0;
   transform: translateY(8px);
   pointer-events: none;
@@ -521,7 +539,8 @@ function applySchedule() {
 }
 
 .apply-bar code {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--hairline-soft);
+  color: var(--data-ink);
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
 }
