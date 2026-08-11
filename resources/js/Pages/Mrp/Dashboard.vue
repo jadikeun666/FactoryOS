@@ -191,6 +191,7 @@ onBeforeUnmount(() => {
   padding: 1.5rem;
   max-width: 1200px;
   margin: 0 auto;
+  font-family: var(--font-body);
 }
 
 .page-header {
@@ -201,24 +202,26 @@ onBeforeUnmount(() => {
 }
 
 .page-eyebrow {
+  font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #F59E0B;
+  color: var(--signal-amber);
   margin: 0 0 0.25rem;
 }
 
 .page-title {
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   margin: 0;
 }
 
 .page-subtitle {
   font-size: 0.8125rem;
-  color: #64748B;
+  color: var(--data-ink-muted);
   margin: 0.35rem 0 0;
   max-width: 50ch;
 }
@@ -232,6 +235,7 @@ onBeforeUnmount(() => {
 
 .btn {
   padding: 0.5rem 1rem;
+  font-family: var(--font-display);
   font-size: 0.8125rem;
   font-weight: 600;
   border-radius: 8px;
@@ -241,12 +245,12 @@ onBeforeUnmount(() => {
 }
 
 .btn--primary {
-  background: #0F172A;
-  color: #F8FAFC;
+  background: var(--signal-amber);
+  color: #1C1F26;
 }
 
 .btn--primary:hover:not(:disabled) {
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25);
+  filter: brightness(1.08);
 }
 
 .btn--primary:disabled {
@@ -255,13 +259,13 @@ onBeforeUnmount(() => {
 }
 
 .btn--secondary {
-  background: #FFFFFF;
-  border-color: #E2E8F0;
-  color: #334155;
+  background: var(--panel-graphite);
+  border-color: var(--hairline-border);
+  color: var(--data-ink-muted);
 }
 
 .btn--secondary:hover:not(:disabled) {
-  background: #F8FAFC;
+  background: var(--surface-steel);
 }
 
 .btn--secondary:disabled {
