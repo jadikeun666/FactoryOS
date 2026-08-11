@@ -1,12 +1,15 @@
 <template>
   <div class="mrp-grid">
-    <div class="mrp-grid__header">
-      <div>
-        <span class="mrp-grid__title">Grid MRP</span>
-        <p class="mrp-grid__subtitle" v-if="mrpRun">
-          Run #{{ mrpRun.id }} · Schedule {{ mrpRun.schedule?.algorithm?.toUpperCase() ?? '–' }}
-          · Dihitung {{ formatDateTime(mrpRun.computed_at) }}
-        </p>
+<div class="mrp-grid__header">
+      <div class="mrp-grid__title-group">
+        <span class="mrp-grid__led" :class="{ 'mrp-grid__led--active': !!mrpRun }"></span>
+        <div>
+          <span class="mrp-grid__title">Grid MRP</span>
+          <p class="mrp-grid__subtitle" v-if="mrpRun">
+            Run #{{ mrpRun.id }} · Schedule {{ mrpRun.schedule?.algorithm?.toUpperCase() ?? '–' }}
+            · Dihitung {{ formatDateTime(mrpRun.computed_at) }}
+          </p>
+        </div>
       </div>
       <button type="button" class="btn btn--ghost btn--small" :disabled="isLoading" @click="refresh">
         {{ isLoading ? 'Memuat…' : '↻ Refresh' }}
@@ -203,6 +206,23 @@ async function refresh() {
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
+}
+
+.mrp-grid__title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.mrp-grid__led {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 2px;
+  background: var(--hairline-strong);
+  flex-shrink: 0;
+}
+.mrp-grid__led--active {
+  background: var(--signal-green);
+  box-shadow: 0 0 6px 1px rgba(74, 155, 110, 0.5);
 }
 
 .mrp-grid__title {
