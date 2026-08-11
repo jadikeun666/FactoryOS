@@ -135,6 +135,7 @@ function formatNumber(value) {
   padding: 1.5rem;
   max-width: 1200px;
   margin: 0 auto;
+  font-family: var(--font-body);
 }
 
 .page-header {
@@ -145,24 +146,26 @@ function formatNumber(value) {
 }
 
 .page-eyebrow {
+  font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #F59E0B;
+  color: var(--signal-amber);
   margin: 0 0 0.25rem;
 }
 
 .page-title {
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   margin: 0;
 }
 
 .page-subtitle {
   font-size: 0.8125rem;
-  color: #64748B;
+  color: var(--data-ink-muted);
   margin: 0.35rem 0 0;
 }
 
@@ -171,6 +174,7 @@ function formatNumber(value) {
   align-items: center;
   gap: 0.4rem;
   padding: 0.5rem 1rem;
+  font-family: var(--font-display);
   font-size: 0.8125rem;
   font-weight: 600;
   border-radius: 8px;
@@ -183,19 +187,19 @@ function formatNumber(value) {
 .btn:active { transform: translateY(1px); }
 
 .btn--primary {
-  background: #0F172A;
-  color: #F8FAFC;
+  background: var(--signal-amber);
+  color: #1C1F26;
 }
 
-.btn--primary:hover { background: #1E293B; }
+.btn--primary:hover { filter: brightness(1.08); }
 
 .btn--ghost {
-  background: #FFFFFF;
-  border-color: #E2E8F0;
-  color: #334155;
+  background: var(--panel-graphite);
+  border-color: var(--hairline-border);
+  color: var(--data-ink-muted);
 }
 
-.btn--ghost:hover { background: #F8FAFC; }
+.btn--ghost:hover { background: var(--surface-steel); }
 
 .filter-bar {
   display: flex;
@@ -208,28 +212,31 @@ function formatNumber(value) {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  font-size: 0.75rem;
-  color: #475569;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  color: var(--data-ink-muted);
 }
 
 .input {
   padding: 0.45rem 0.65rem;
   font-size: 0.8125rem;
-  border: 1px solid #E2E8F0;
+  font-family: var(--font-body);
+  border: 1px solid var(--hairline-border);
   border-radius: 6px;
-  color: #0F172A;
+  color: var(--data-ink);
+  background: var(--panel-graphite);
 }
 
 .input:focus {
-  outline: 2px solid #F59E0B;
+  outline: 2px solid var(--signal-amber);
   outline-offset: 1px;
 }
 
 .table-shell {
   overflow-x: auto;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--hairline-border);
   border-radius: 8px;
-  background: #FFFFFF;
+  background: var(--panel-graphite);
 }
 
 .log-table {
@@ -241,19 +248,19 @@ function formatNumber(value) {
 .log-table th {
   text-align: left;
   padding: 0.65rem 0.85rem;
-  background: #F8FAFC;
-  color: #64748B;
+  background: var(--surface-steel);
+  color: var(--data-ink-muted);
   font-weight: 600;
   font-size: 0.6875rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid var(--hairline-border);
 }
 
 .log-table td {
   padding: 0.65rem 0.85rem;
-  border-bottom: 1px solid #F1F5F9;
-  color: #1E293B;
+  border-bottom: 1px solid var(--hairline-soft);
+  color: var(--data-ink);
 }
 
 .log-table th.num,
@@ -270,30 +277,31 @@ function formatNumber(value) {
 
 .empty-row {
   text-align: center;
-  color: #94A3B8;
+  color: var(--data-ink-muted);
   padding: 2rem;
 }
 
 .status-badge {
   display: inline-block;
   padding: 0.15rem 0.55rem;
-  border-radius: 999px;
+  border-radius: 4px;
+  font-family: var(--font-display);
   font-size: 0.6875rem;
   font-weight: 600;
 }
 
 .status-badge--draft {
-  background: #FEF3C7;
-  color: #92400E;
+  background: rgba(232, 163, 61, 0.18);
+  color: var(--signal-amber);
 }
 
 .status-badge--validated {
-  background: #DCFCE7;
-  color: #166534;
+  background: rgba(74, 155, 110, 0.18);
+  color: var(--signal-green);
 }
 
 .link-action {
-  color: #2563EB;
+  color: #5B8DEF;
   font-weight: 600;
   text-decoration: none;
 }
@@ -310,26 +318,27 @@ function formatNumber(value) {
 
 .page-link {
   padding: 0.35rem 0.65rem;
+  font-family: var(--font-display);
   font-size: 0.75rem;
   border-radius: 6px;
-  border: 1px solid #E2E8F0;
-  color: #334155;
+  border: 1px solid var(--hairline-border);
+  color: var(--data-ink-muted);
   text-decoration: none;
-  background: #FFFFFF;
+  background: var(--panel-graphite);
 }
 
 .page-link:hover {
-  background: #F8FAFC;
+  background: var(--surface-steel);
 }
 
 .page-link--active {
-  background: #0F172A;
-  color: #F8FAFC;
-  border-color: #0F172A;
+  background: var(--signal-amber);
+  color: #1C1F26;
+  border-color: var(--signal-amber);
 }
 
 .page-link--disabled {
-  color: #CBD5E1;
+  color: var(--hairline-strong);
   cursor: not-allowed;
 }
 </style>

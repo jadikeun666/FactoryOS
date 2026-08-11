@@ -221,6 +221,7 @@ function formatNumber(value, decimals = 2) {
   padding: 1.5rem;
   max-width: 900px;
   margin: 0 auto;
+  font-family: var(--font-body);
 }
 
 .page-header {
@@ -232,11 +233,12 @@ function formatNumber(value, decimals = 2) {
 }
 
 .page-eyebrow {
+  font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #F59E0B;
+  color: var(--signal-amber);
   margin: 0 0 0.25rem;
 }
 
@@ -244,15 +246,16 @@ function formatNumber(value, decimals = 2) {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+  font-family: var(--font-display);
   font-size: 1.375rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   margin: 0;
 }
 
 .page-subtitle {
   font-size: 0.8125rem;
-  color: #64748B;
+  color: var(--data-ink-muted);
   margin: 0.35rem 0 0;
 }
 
@@ -263,14 +266,15 @@ function formatNumber(value, decimals = 2) {
 }
 
 .status-badge {
+  font-family: var(--font-display);
   font-size: 0.6875rem;
   font-weight: 600;
   padding: 0.15rem 0.55rem;
-  border-radius: 999px;
+  border-radius: 4px;
 }
 
-.status-badge--draft { background: #FEF3C7; color: #92400E; }
-.status-badge--validated { background: #DCFCE7; color: #166534; }
+.status-badge--draft { background: rgba(232, 163, 61, 0.18); color: var(--signal-amber); }
+.status-badge--validated { background: rgba(74, 155, 110, 0.18); color: var(--signal-green); }
 
 .metrics-grid {
   display: grid;
@@ -283,20 +287,21 @@ function formatNumber(value, decimals = 2) {
   flex-direction: column;
   gap: 0.25rem;
   padding: 0.85rem 1rem;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--panel-graphite);
+  border: 1px solid var(--hairline-border);
   border-radius: 8px;
 }
 
 .metric-label {
   font-size: 0.75rem;
-  color: #64748B;
+  color: var(--data-ink-muted);
 }
 
 .metric-value {
+  font-family: var(--font-display);
   font-size: 1.125rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   font-variant-numeric: tabular-nums;
 }
 
@@ -305,8 +310,8 @@ function formatNumber(value, decimals = 2) {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--panel-graphite);
+  border: 1px solid var(--hairline-border);
   border-radius: 10px;
   padding: 1.25rem;
 }
@@ -318,9 +323,10 @@ function formatNumber(value, decimals = 2) {
 }
 
 .section-title {
+  font-family: var(--font-display);
   font-size: 0.9375rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   margin: 0;
 }
 
@@ -330,8 +336,8 @@ function formatNumber(value, decimals = 2) {
   align-items: flex-end;
   gap: 0.65rem;
   padding: 0.85rem;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: var(--surface-steel);
+  border: 1px solid var(--hairline-border);
   border-radius: 8px;
 }
 
@@ -345,27 +351,31 @@ function formatNumber(value, decimals = 2) {
 .field--grow { flex: 1 1 200px; }
 
 .field-label {
-  font-size: 0.75rem;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: #475569;
+  letter-spacing: 0.02em;
+  color: var(--data-ink-muted);
 }
 
 .input {
   padding: 0.45rem 0.6rem;
   font-size: 0.8125rem;
-  border: 1px solid #E2E8F0;
+  font-family: var(--font-body);
+  border: 1px solid var(--hairline-border);
   border-radius: 6px;
-  color: #0F172A;
+  color: var(--data-ink);
+  background: var(--panel-graphite);
 }
 
 .input:focus {
-  outline: 2px solid #F59E0B;
+  outline: 2px solid var(--signal-amber);
   outline-offset: 1px;
 }
 
 .downtime-empty {
   font-size: 0.8125rem;
-  color: #94A3B8;
+  color: var(--data-ink-muted);
 }
 
 .downtime-table {
@@ -377,18 +387,18 @@ function formatNumber(value, decimals = 2) {
 .downtime-table th {
   text-align: left;
   padding: 0.55rem 0.7rem;
-  background: #F8FAFC;
-  color: #64748B;
+  background: var(--surface-steel);
+  color: var(--data-ink-muted);
   font-weight: 600;
   font-size: 0.6875rem;
   text-transform: uppercase;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid var(--hairline-border);
 }
 
 .downtime-table td {
   padding: 0.55rem 0.7rem;
-  border-bottom: 1px solid #F1F5F9;
-  color: #1E293B;
+  border-bottom: 1px solid var(--hairline-soft);
+  color: var(--data-ink);
 }
 
 .downtime-table th.num,
@@ -406,18 +416,19 @@ function formatNumber(value, decimals = 2) {
 .category-tag {
   display: inline-block;
   padding: 0.1rem 0.5rem;
-  border-radius: 999px;
+  border-radius: 4px;
+  font-family: var(--font-display);
   font-size: 0.6875rem;
   font-weight: 600;
-  background: #F1F5F9;
-  color: #475569;
+  background: var(--hairline-soft);
+  color: var(--data-ink-muted);
 }
 
-.category-tag--breakdown { background: #FEE2E2; color: #B91C1C; }
-.category-tag--setup { background: #FEF3C7; color: #92400E; }
-.category-tag--material { background: #DBEAFE; color: #1D4ED8; }
-.category-tag--operator { background: #EDE9FE; color: #6D28D9; }
-.category-tag--other { background: #F1F5F9; color: #475569; }
+.category-tag--breakdown { background: rgba(214, 69, 69, 0.18); color: var(--signal-red); }
+.category-tag--setup { background: rgba(232, 163, 61, 0.18); color: var(--signal-amber); }
+.category-tag--material { background: rgba(91, 141, 239, 0.18); color: #5B8DEF; }
+.category-tag--operator { background: rgba(139, 127, 209, 0.18); color: #8B7FD1; }
+.category-tag--other { background: var(--hairline-soft); color: var(--data-ink-muted); }
 
 .link-action {
   background: none;
@@ -429,15 +440,15 @@ function formatNumber(value, decimals = 2) {
   text-decoration: underline;
 }
 
-.link-action--danger { color: #DC2626; }
+.link-action--danger { color: var(--signal-red); }
 
 .danger-zone {
-  border-color: #FCA5A5;
+  border-color: rgba(214, 69, 69, 0.4);
 }
 
 .danger-text {
   font-size: 0.8125rem;
-  color: #7F1D1D;
+  color: var(--signal-red);
   margin: 0;
 }
 
@@ -446,6 +457,7 @@ function formatNumber(value, decimals = 2) {
   align-items: center;
   gap: 0.4rem;
   padding: 0.5rem 1rem;
+  font-family: var(--font-display);
   font-size: 0.8125rem;
   font-weight: 600;
   border-radius: 8px;
@@ -460,21 +472,21 @@ function formatNumber(value, decimals = 2) {
 
 .btn--sm { padding: 0.3rem 0.65rem; font-size: 0.75rem; }
 
-.btn--primary { background: #0F172A; color: #F8FAFC; }
-.btn--primary:hover:not(:disabled) { background: #1E293B; }
+.btn--primary { background: var(--signal-amber); color: #1C1F26; }
+.btn--primary:hover:not(:disabled) { filter: brightness(1.08); }
 
 .btn--ghost {
-  background: #FFFFFF;
-  border-color: #E2E8F0;
-  color: #334155;
+  background: var(--panel-graphite);
+  border-color: var(--hairline-border);
+  color: var(--data-ink-muted);
 }
-.btn--ghost:hover { background: #F1F5F9; }
+.btn--ghost:hover { background: var(--surface-steel); }
 
 .btn--danger {
-  background: #FEF2F2;
-  border-color: #FCA5A5;
-  color: #DC2626;
+  background: rgba(214, 69, 69, 0.12);
+  border-color: rgba(214, 69, 69, 0.4);
+  color: var(--signal-red);
   width: fit-content;
 }
-.btn--danger:hover { background: #FEE2E2; }
+.btn--danger:hover { background: rgba(214, 69, 69, 0.2); }
 </style>

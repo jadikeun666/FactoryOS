@@ -178,6 +178,7 @@ function submit() {
   padding: 1.5rem;
   max-width: 900px;
   margin: 0 auto;
+  font-family: var(--font-body);
 }
 
 .page-header {
@@ -188,24 +189,26 @@ function submit() {
 }
 
 .page-eyebrow {
+  font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #F59E0B;
+  color: var(--signal-amber);
   margin: 0 0 0.25rem;
 }
 
 .page-title {
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   margin: 0;
 }
 
 .page-subtitle {
   font-size: 0.8125rem;
-  color: #64748B;
+  color: var(--data-ink-muted);
   margin: 0.35rem 0 0;
 }
 
@@ -213,8 +216,8 @@ function submit() {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--panel-graphite);
+  border: 1px solid var(--hairline-border);
   border-radius: 10px;
   padding: 1.5rem;
 }
@@ -240,39 +243,46 @@ function submit() {
 }
 
 .field-label {
-  font-size: 0.75rem;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: #475569;
+  letter-spacing: 0.02em;
+  color: var(--data-ink-muted);
 }
 
 .input {
   padding: 0.5rem 0.65rem;
   font-size: 0.8125rem;
-  border: 1px solid #E2E8F0;
+  font-family: var(--font-body);
+  border: 1px solid var(--hairline-border);
   border-radius: 6px;
-  color: #0F172A;
-  background: #FFFFFF;
+  color: var(--data-ink);
+  background: var(--surface-steel);
+}
+
+.input::placeholder {
+  color: var(--data-ink-muted);
 }
 
 .input:focus {
-  outline: 2px solid #F59E0B;
+  outline: 2px solid var(--signal-amber);
   outline-offset: 1px;
 }
 
 .input--error {
-  border-color: #EF4444;
+  border-color: var(--signal-red);
 }
 
 .field-error {
   font-size: 0.6875rem;
-  color: #DC2626;
+  color: var(--signal-red);
 }
 
 .downtime-section {
   display: flex;
   flex-direction: column;
   gap: 0.85rem;
-  border-top: 1px solid #F1F5F9;
+  border-top: 1px solid var(--hairline-soft);
   padding-top: 1.25rem;
 }
 
@@ -283,15 +293,16 @@ function submit() {
 }
 
 .section-title {
+  font-family: var(--font-display);
   font-size: 0.9375rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   margin: 0;
 }
 
 .downtime-empty {
   font-size: 0.8125rem;
-  color: #94A3B8;
+  color: var(--data-ink-muted);
 }
 
 .downtime-row {
@@ -300,8 +311,8 @@ function submit() {
   align-items: flex-end;
   gap: 0.65rem;
   padding: 0.85rem;
-  background: #F8FAFC;
-  border: 1px solid #E2E8F0;
+  background: var(--surface-steel);
+  border: 1px solid var(--hairline-border);
   border-radius: 8px;
 }
 
@@ -312,22 +323,22 @@ function submit() {
   width: 1.9rem;
   height: 1.9rem;
   border-radius: 6px;
-  border: 1px solid #FCA5A5;
-  background: #FEF2F2;
-  color: #DC2626;
+  border: 1px solid rgba(214, 69, 69, 0.4);
+  background: rgba(214, 69, 69, 0.12);
+  color: var(--signal-red);
   cursor: pointer;
   font-size: 0.75rem;
 }
 
 .icon-btn:hover {
-  background: #FEE2E2;
+  background: rgba(214, 69, 69, 0.2);
 }
 
 .form-footer {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
-  border-top: 1px solid #F1F5F9;
+  border-top: 1px solid var(--hairline-soft);
   padding-top: 1.25rem;
 }
 
@@ -336,6 +347,7 @@ function submit() {
   align-items: center;
   gap: 0.4rem;
   padding: 0.5rem 1rem;
+  font-family: var(--font-display);
   font-size: 0.8125rem;
   font-weight: 600;
   border-radius: 8px;
@@ -354,17 +366,17 @@ function submit() {
 }
 
 .btn--primary {
-  background: #0F172A;
-  color: #F8FAFC;
+  background: var(--signal-amber);
+  color: #1C1F26;
 }
 
-.btn--primary:hover:not(:disabled) { background: #1E293B; }
+.btn--primary:hover:not(:disabled) { filter: brightness(1.08); }
 
 .btn--ghost {
-  background: #FFFFFF;
-  border-color: #E2E8F0;
-  color: #334155;
+  background: var(--panel-graphite);
+  border-color: var(--hairline-border);
+  color: var(--data-ink-muted);
 }
 
-.btn--ghost:hover { background: #F1F5F9; }
+.btn--ghost:hover { background: var(--surface-steel); }
 </style>
