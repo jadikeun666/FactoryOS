@@ -1,25 +1,25 @@
 <template>
-  <div class="rop-gauge">
-    <div class="rop-gauge__header">
-      <span class="rop-gauge__title">Status Stok vs ROP</span>
+  <div class="rop-console">
+    <div class="rop-console__header">
+      <span class="rop-console__title">Status Stok vs ROP</span>
       <button type="button" class="btn btn--ghost btn--small" :disabled="isLoading" @click="refresh">
         {{ isLoading ? 'Memuat…' : '↻ Refresh' }}
       </button>
     </div>
 
-    <div v-if="materials.length === 0" class="rop-gauge__empty">
+    <div v-if="materials.length === 0" class="rop-console__empty">
       Belum ada material dengan parameter inventory (EOQ/Safety Stock/ROP).
     </div>
 
-    <div v-else class="rop-gauge__grid">
-      <div
+    <ul v-else class="material-log">
+      <li
         v-for="material in sortedMaterials"
         :key="material.material_id"
-        class="material-card"
-        :class="`material-card--${severity(material)}`"
+        class="material-row"
       >
-        <div class="material-card__head">
-          <span class="material-card__name">{{ material.name }}</span>
+        <div class="material-row__head">
+          <span class="material-row__indicator" :class="`material-row__indicator--${severity(material)}`"></span>
+          <span class="material-row__name">{{ material.name }}</span>
           <span class="severity-tag" :class="`severity-tag--${severity(material)}`">
             {{ severityLabel(severity(material)) }}
           </span>
@@ -27,7 +27,6 @@
 
         <div class="stock-bar">
           <div class="stock-bar__track">
-            <!-- Zona aman: dari 0 sampai ROP (merah/kuning), dari ROP ke atas (hijau) -->
             <div
               class="stock-bar__zone stock-bar__zone--danger"
               :style="{ width: `${zoneWidth(material, 'safety')}%` }"
@@ -53,14 +52,14 @@
           </div>
         </div>
 
-        <dl class="material-card__figures">
-          <div><dt>Qty On Hand</dt><dd>{{ formatNumber(material.qty_on_hand) }} {{ material.unit }}</dd></div>
-          <div><dt>Safety Stock</dt><dd>{{ formatNumber(material.safety_stock) }}</dd></div>
-          <div><dt>ROP</dt><dd>{{ formatNumber(material.rop) }}</dd></div>
-          <div><dt>EOQ</dt><dd>{{ formatNumber(material.eoq) }}</dd></div>
-        </dl>
-      </div>
-    </div>
+        <div class="material-row__figures">
+          <span class="figure"><span class="figure__label">QTY</span><span class="figure__value">{{ formatNumber(material.qty_on_hand) }} {{ material.unit }}</span></span>
+          <span class="figure"><span class="figure__label">SS</span><span class="figure__value">{{ formatNumber(material.safety_stock) }}</span></span>
+          <span class="figure"><span class="figure__label">ROP</span><span class="figure__value">{{ formatNumber(material.rop) }}</span></span>
+          <span class="figure"><span class="figure__label">EOQ</span><span class="figure__value">{{ formatNumber(material.eoq) }}</span></span>
+        </div>
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -86,6 +85,14 @@
  *   'critical' -> qty_on_hand <= safety_stock
  *   'warning'  -> qty_on_hand <= rop (tapi > safety_stock)
  *   'safe'     -> qty_on_hand > rop
+ *
+ * REDESIGN VISUAL (2026-08-09): dari grid card-pill generik ke daftar
+ * baris "log console" (selaras AlertBanner.vue) -- indikator LED persegi
+ * kecil per baris, hairline divider, tipografi mono untuk data. Bar
+ * visual (posisi qty vs safety stock vs ROP) DIPERTAHANKAN karena itu
+ * informasi fungsional nyata, bukan dekorasi -- hanya kontainernya yang
+ * diubah dari card lembut ke baris penuh-lebar. TIDAK ADA perubahan
+ * logic JS (computed/fungsi severity/scale/format) di file ini.
  */
 import { ref, computed, onMounted } from 'vue'
 
@@ -169,85 +176,103 @@ async function refresh() {
 </script>
 
 <style scoped>
-.rop-gauge {
+.rop-console {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  padding: 1.25rem;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
-  border-radius: 10px;
+  background: var(--panel-graphite);
+  border: 1px solid var(--hairline-border);
+  border-radius: 6px;
+  font-family: var(--font-body);
+  overflow: hidden;
 }
 
-.rop-gauge__header {
+.rop-console__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--hairline-border);
+  background: var(--surface-steel);
 }
 
-.rop-gauge__title {
-  font-size: 0.875rem;
+.rop-console__title {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
   font-weight: 700;
-  color: #0F172A;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--data-ink);
 }
 
-.rop-gauge__empty {
-  padding: 2rem 1rem;
+.rop-console__empty {
+  padding: 1.75rem 1.1rem;
   text-align: center;
-  color: #94A3B8;
+  color: var(--data-ink-muted);
   font-size: 0.8125rem;
 }
 
-.rop-gauge__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 0.85rem;
+.material-log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
-.material-card {
+.material-row {
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  padding: 0.85rem;
-  border: 1.5px solid #E5E7EB;
-  border-radius: 10px;
+  gap: 0.5rem;
+  padding: 0.75rem 1.1rem;
+  border-bottom: 1px solid var(--hairline-soft);
 }
 
-.material-card--critical { border-color: #FCA5A5; background: #FEF2F2; }
-.material-card--warning { border-color: #FCD34D; background: #FFFBEB; }
-.material-card--safe { border-color: #E5E7EB; background: #FFFFFF; }
+.material-row:last-child {
+  border-bottom: none;
+}
 
-.material-card__head {
+.material-row__head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 0.5rem;
 }
 
-.material-card__name {
+.material-row__indicator {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.material-row__indicator--critical { background: var(--signal-red); }
+.material-row__indicator--warning { background: var(--signal-amber); }
+.material-row__indicator--safe { background: var(--signal-green); }
+
+.material-row__name {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #0F172A;
+  color: var(--data-ink);
+  flex: 1;
 }
 
 .severity-tag {
+  font-family: var(--font-display);
   font-size: 0.625rem;
   font-weight: 700;
+  letter-spacing: 0.03em;
   padding: 0.1rem 0.5rem;
-  border-radius: 999px;
+  border-radius: 3px;
   text-transform: uppercase;
   flex-shrink: 0;
 }
 
-.severity-tag--critical { background: #FEE2E2; color: #B91C1C; }
-.severity-tag--warning { background: #FEF3C7; color: #92400E; }
-.severity-tag--safe { background: #DCFCE7; color: #15803D; }
+.severity-tag--critical { background: rgba(214, 69, 69, 0.18); color: var(--signal-red); }
+.severity-tag--warning { background: rgba(232, 163, 61, 0.18); color: var(--signal-amber); }
+.severity-tag--safe { background: rgba(74, 155, 110, 0.18); color: var(--signal-green); }
 
 .stock-bar__track {
   position: relative;
-  height: 0.6rem;
-  border-radius: 999px;
-  background: #F1F5F9;
+  height: 0.4rem;
+  border-radius: 2px;
+  background: var(--hairline-soft);
   overflow: hidden;
 }
 
@@ -258,57 +283,66 @@ async function refresh() {
   height: 100%;
 }
 
-.stock-bar__zone--danger { background: #FEE2E2; z-index: 1; }
-.stock-bar__zone--warn { background: #FEF3C7; z-index: 0; }
+.stock-bar__zone--danger { background: rgba(214, 69, 69, 0.2); z-index: 1; }
+.stock-bar__zone--warn { background: rgba(232, 163, 61, 0.2); z-index: 0; }
 
 .stock-bar__fill {
   position: absolute;
   top: 0;
   left: 0;
   height: 100%;
-  background: #2563EB;
-  border-radius: 999px;
+  background: #5B8DEF;
   z-index: 2;
   transition: width 0.4s ease;
 }
 
 .stock-bar__marker {
   position: absolute;
-  top: -2px;
+  top: -1px;
   width: 2px;
-  height: calc(100% + 4px);
-  background: #94A3B8;
+  height: calc(100% + 2px);
+  background: var(--hairline-strong);
   z-index: 3;
 }
 
 .stock-bar__marker--rop {
-  background: #DC2626;
+  background: var(--signal-red);
 }
 
-.material-card__figures {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.35rem 0.75rem;
-  margin: 0;
-  font-size: 0.6875rem;
+.material-row__figures {
+  display: flex;
+  gap: 1.1rem;
+  flex-wrap: wrap;
 }
 
-.material-card__figures dt {
-  color: #94A3B8;
+.figure {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
 }
 
-.material-card__figures dd {
-  margin: 0;
+.figure__label {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  color: var(--data-ink-muted);
+}
+
+.figure__value {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
   font-weight: 600;
-  color: #0F172A;
+  color: var(--data-ink);
   font-variant-numeric: tabular-nums;
 }
 
 .btn {
-  border-radius: 6px;
-  border: 1px solid #E2E8F0;
+  border-radius: 4px;
+  border: 1px solid var(--hairline-border);
   cursor: pointer;
+  font-family: var(--font-display);
   font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .btn--small {
@@ -317,10 +351,10 @@ async function refresh() {
 }
 
 .btn--ghost {
-  background: #FFFFFF;
-  color: #334155;
+  background: transparent;
+  color: var(--data-ink-muted);
 }
 
-.btn--ghost:hover:not(:disabled) { background: #F8FAFC; }
+.btn--ghost:hover:not(:disabled) { background: var(--panel-graphite-raised); color: var(--data-ink); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 </style>

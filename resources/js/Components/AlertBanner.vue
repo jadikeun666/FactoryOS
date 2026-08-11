@@ -1,10 +1,13 @@
 <template>
-  <div v-if="visibleAlerts.length > 0" class="alert-banner">
-    <div class="alert-banner__header">
-      <span class="alert-banner__title">
-        ⚠️ {{ visibleAlerts.length }} Material Perlu Perhatian
-      </span>
-      <div class="alert-banner__filter">
+  <div class="alert-console">
+    <div class="alert-console__header">
+      <div class="alert-console__title-group">
+        <span class="alert-console__led" :class="{ 'alert-console__led--active': visibleAlerts.length > 0 }"></span>
+        <span class="alert-console__title">
+          {{ visibleAlerts.length }} Material · {{ statusLabel(currentStatus) }}
+        </span>
+      </div>
+      <div class="alert-console__filter">
         <button
           v-for="status in statusTabs"
           :key="status.value"
@@ -18,20 +21,16 @@
       </div>
     </div>
 
-    <ul class="alert-list">
-      <li v-for="alert in visibleAlerts" :key="alert.id" class="alert-item">
-        <div class="alert-item__main">
-          <span class="alert-item__material">{{ alert.material?.name ?? `Material #${alert.material_id}` }}</span>
-          <span class="status-tag" :class="`status-tag--${alert.status}`">
-            {{ statusLabel(alert.status) }}
-          </span>
-        </div>
-        <div class="alert-item__figures">
-          <span>Stok: <strong>{{ formatNumber(alert.current_qty) }}</strong></span>
-          <span>ROP: <strong>{{ formatNumber(alert.rop_qty) }}</strong></span>
-          <span>EOQ: <strong>{{ formatNumber(alert.eoq_qty) }}</strong></span>
-        </div>
-        <div class="alert-item__actions">
+    <ul v-if="visibleAlerts.length > 0" class="alert-log">
+      <li v-for="alert in visibleAlerts" :key="alert.id" class="alert-row">
+        <span class="alert-row__indicator" :class="`alert-row__indicator--${alert.status}`"></span>
+        <span class="alert-row__material">{{ alert.material?.name ?? `Material #${alert.material_id}` }}</span>
+        <span class="alert-row__figures">
+          <span class="figure"><span class="figure__label">STOK</span><span class="figure__value">{{ formatNumber(alert.current_qty) }}</span></span>
+          <span class="figure"><span class="figure__label">ROP</span><span class="figure__value">{{ formatNumber(alert.rop_qty) }}</span></span>
+          <span class="figure"><span class="figure__label">EOQ</span><span class="figure__value">{{ formatNumber(alert.eoq_qty) }}</span></span>
+        </span>
+        <span class="alert-row__actions">
           <button
             v-if="alert.status === 'open'"
             type="button"
@@ -50,13 +49,13 @@
           >
             PO Dibuat
           </button>
-        </div>
+        </span>
       </li>
     </ul>
-  </div>
 
-  <div v-else class="alert-banner alert-banner--empty">
-    ✅ Tidak ada reorder alert untuk status "{{ statusLabel(currentStatus) }}".
+    <div v-else class="alert-log__empty">
+      Tidak ada reorder alert untuk status "{{ statusLabel(currentStatus) }}".
+    </div>
   </div>
 </template>
 
@@ -86,6 +85,17 @@
  * status alert adalah keputusan bisnis (siapa yang boleh acknowledge/
  * order) yang di luar scope "frontend MRP" murni -- perlu didiskusikan
  * terpisah (Policy? role apa yang boleh?).
+ *
+ * FIX BUG (2026-08-09): filter tab (Terbuka/Dilihat/Dipesan) SEBELUMNYA
+ * ada di dalam kondisi v-if="visibleAlerts.length > 0" -- begitu tab aktif
+ * kosong, seluruh komponen pindah ke cabang v-else yang tidak punya tab
+ * sama sekali, sehingga user terjebak tanpa cara pindah tab. Fix: filter
+ * tab dipindah ke luar percabangan v-if/v-else, selalu tampil.
+ *
+ * REDESIGN VISUAL (2026-08-09): dari pola card-pill generik ke tampilan
+ * "log console" -- baris data dengan hairline divider dan indikator LED
+ * persegi kecil, selaras dengan signature tick-mark dial di OeeGauge.vue.
+ * TIDAK ADA perubahan logic JS selain restrukturisasi template di atas.
  */
 import { ref, computed, watch } from 'vue'
 
@@ -164,131 +174,175 @@ async function updateStatus(alert, newStatus) {
 </script>
 
 <style scoped>
-.alert-banner {
+.alert-console {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
-  padding: 1.1rem 1.25rem;
-  background: #FFFBEB;
-  border: 1px solid #FDE68A;
-  border-radius: 10px;
+  background: var(--panel-graphite);
+  border: 1px solid var(--hairline-border);
+  border-radius: 6px;
+  font-family: var(--font-body);
+  overflow: hidden;
 }
 
-.alert-banner--empty {
-  background: #F0FDF4;
-  border-color: #BBF7D0;
-  color: #15803D;
-  font-size: 0.8125rem;
-  text-align: center;
-  padding: 1rem;
-}
-
-.alert-banner__header {
+.alert-console__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.6rem;
+  padding: 0.85rem 1.1rem;
+  border-bottom: 1px solid var(--hairline-border);
+  background: var(--surface-steel);
 }
 
-.alert-banner__title {
-  font-size: 0.875rem;
+.alert-console__title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.alert-console__led {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 2px;
+  background: var(--hairline-strong);
+  flex-shrink: 0;
+}
+
+.alert-console__led--active {
+  background: var(--signal-amber);
+  box-shadow: 0 0 6px 1px rgba(232, 163, 61, 0.6);
+  animation: led-pulse 2s ease-in-out infinite;
+}
+
+@keyframes led-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .alert-console__led--active { animation: none; }
+}
+
+.alert-console__title {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
   font-weight: 700;
-  color: #92400E;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--data-ink);
 }
 
-.alert-banner__filter {
+.alert-console__filter {
   display: inline-flex;
-  gap: 0.25rem;
-  padding: 0.2rem;
-  background: rgba(255, 255, 255, 0.6);
-  border-radius: 8px;
+  gap: 0.15rem;
 }
 
 .filter-tab {
-  padding: 0.3rem 0.7rem;
-  font-size: 0.75rem;
+  padding: 0.3rem 0.65rem;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: #92400E;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--data-ink-muted);
   background: transparent;
-  border: none;
-  border-radius: 6px;
+  border: 1px solid transparent;
+  border-radius: 4px;
   cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.filter-tab:hover {
+  color: var(--data-ink);
 }
 
 .filter-tab--active {
-  background: #92400E;
-  color: #FFFBEB;
+  color: var(--signal-amber);
+  border-color: var(--hairline-border);
 }
 
-.alert-list {
+.alert-log {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
 }
 
-.alert-item {
-  display: flex;
+.alert-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.6rem;
-  padding: 0.6rem 0.8rem;
-  background: #FFFFFF;
-  border: 1px solid #FDE68A;
-  border-radius: 8px;
+  gap: 0.9rem;
+  padding: 0.65rem 1.1rem;
+  border-bottom: 1px solid var(--hairline-soft);
 }
 
-.alert-item__main {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-width: 160px;
+.alert-row:last-child {
+  border-bottom: none;
 }
 
-.alert-item__material {
+.alert-row__indicator {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+
+.alert-row__indicator--open { background: var(--signal-red); }
+.alert-row__indicator--acknowledged { background: var(--signal-amber); }
+.alert-row__indicator--ordered { background: var(--signal-green); }
+
+.alert-row__material {
   font-size: 0.8125rem;
   font-weight: 600;
-  color: #0F172A;
+  color: var(--data-ink);
 }
 
-.status-tag {
-  font-size: 0.625rem;
-  font-weight: 700;
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  text-transform: uppercase;
-}
-
-.status-tag--open { background: #FEE2E2; color: #B91C1C; }
-.status-tag--acknowledged { background: #FEF3C7; color: #92400E; }
-.status-tag--ordered { background: #DCFCE7; color: #15803D; }
-
-.alert-item__figures {
+.alert-row__figures {
   display: flex;
-  gap: 0.9rem;
-  font-size: 0.75rem;
-  color: #475569;
+  gap: 1rem;
 }
 
-.alert-item__figures strong {
-  color: #0F172A;
+.figure {
+  display: flex;
+  align-items: baseline;
+  gap: 0.3rem;
+}
+
+.figure__label {
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  color: var(--data-ink-muted);
+}
+
+.figure__value {
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--data-ink);
   font-variant-numeric: tabular-nums;
 }
 
-.alert-item__actions {
+.alert-row__actions {
   display: flex;
   gap: 0.4rem;
 }
 
+.alert-log__empty {
+  padding: 1.75rem 1.1rem;
+  text-align: center;
+  color: var(--data-ink-muted);
+  font-size: 0.8125rem;
+}
+
 .btn {
-  border-radius: 6px;
-  border: 1px solid transparent;
+  border-radius: 4px;
+  border: 1px solid var(--hairline-border);
   cursor: pointer;
+  font-family: var(--font-display);
   font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .btn--small {
@@ -297,14 +351,16 @@ async function updateStatus(alert, newStatus) {
 }
 
 .btn--ghost {
-  background: #FFFFFF;
-  border-color: #E2E8F0;
-  color: #334155;
+  background: transparent;
+  color: var(--data-ink-muted);
 }
 
+.btn--ghost:hover:not(:disabled) { background: var(--surface-steel); color: var(--data-ink); }
+
 .btn--primary {
-  background: #0F172A;
-  color: #F8FAFC;
+  background: var(--signal-amber);
+  border-color: var(--signal-amber);
+  color: #1C1F26;
 }
 
 .btn:disabled {
