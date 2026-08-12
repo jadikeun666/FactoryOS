@@ -74,7 +74,6 @@ function submit() {
 </script>
 
 <style scoped>
-/* identik dengan Create.vue */
 .form-page {
   display: flex;
   flex-direction: column;
@@ -82,21 +81,24 @@ function submit() {
   padding: 1.5rem;
   max-width: 560px;
   margin: 0 auto;
+  font-family: var(--font-body);
 }
 
 .page-eyebrow {
+  font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #F59E0B;
+  color: var(--signal-amber);
   margin: 0 0 0.25rem;
 }
 
 .page-title {
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   margin: 0;
 }
 
@@ -105,8 +107,8 @@ function submit() {
   flex-direction: column;
   gap: 1rem;
   padding: 1.5rem;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--panel-graphite);
+  border: 1px solid var(--hairline-border);
   border-radius: 10px;
 }
 
@@ -114,8 +116,9 @@ function submit() {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  font-size: 0.8125rem;
-  color: #334155;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  color: var(--data-ink-muted);
   font-weight: 600;
   flex: 1;
 }
@@ -135,15 +138,22 @@ function submit() {
   padding: 0.5rem 0.7rem;
   font-size: 0.8125rem;
   font-weight: 400;
-  border: 1px solid #E2E8F0;
+  border: 1px solid var(--hairline-border);
   border-radius: 6px;
-  font-family: inherit;
+  font-family: var(--font-body);
+  color: var(--data-ink);
+  background: var(--surface-steel);
+}
+
+.input:focus {
+  outline: 2px solid var(--signal-amber);
+  outline-offset: 1px;
 }
 
 .field-error {
   font-size: 0.6875rem;
   font-weight: 500;
-  color: #DC2626;
+  color: var(--signal-red);
 }
 
 .form-actions {
@@ -155,6 +165,7 @@ function submit() {
 
 .btn {
   padding: 0.55rem 1.1rem;
+  font-family: var(--font-display);
   font-size: 0.8125rem;
   font-weight: 600;
   border-radius: 8px;
@@ -166,9 +177,11 @@ function submit() {
 }
 
 .btn--primary {
-  background: #0F172A;
-  color: #F8FAFC;
+  background: var(--signal-amber);
+  color: #1C1F26;
 }
+
+.btn--primary:hover:not(:disabled) { filter: brightness(1.08); }
 
 .btn--primary:disabled {
   opacity: 0.5;
@@ -176,8 +189,10 @@ function submit() {
 }
 
 .btn--ghost {
-  background: #FFFFFF;
-  border-color: #E2E8F0;
-  color: #334155;
+  background: var(--panel-graphite);
+  border-color: var(--hairline-border);
+  color: var(--data-ink-muted);
 }
+
+.btn--ghost:hover { background: var(--surface-steel); }
 </style>

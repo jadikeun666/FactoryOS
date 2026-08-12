@@ -74,6 +74,7 @@ function confirmDelete(material) {
   padding: 1.5rem;
   max-width: 1100px;
   margin: 0 auto;
+  font-family: var(--font-body);
 }
 
 .page-header {
@@ -84,24 +85,26 @@ function confirmDelete(material) {
 }
 
 .page-eyebrow {
+  font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #F59E0B;
+  color: var(--signal-amber);
   margin: 0 0 0.25rem;
 }
 
 .page-title {
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   margin: 0;
 }
 
 .page-subtitle {
   font-size: 0.8125rem;
-  color: #64748B;
+  color: var(--data-ink-muted);
   margin: 0.35rem 0 0;
 }
 
@@ -109,6 +112,7 @@ function confirmDelete(material) {
   display: inline-flex;
   align-items: center;
   padding: 0.55rem 1.1rem;
+  font-family: var(--font-display);
   font-size: 0.8125rem;
   font-weight: 600;
   border-radius: 8px;
@@ -118,12 +122,12 @@ function confirmDelete(material) {
 }
 
 .btn--primary {
-  background: #0F172A;
-  color: #F8FAFC;
+  background: var(--signal-amber);
+  color: #1C1F26;
 }
 
 .btn--primary:hover {
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25);
+  filter: brightness(1.08);
 }
 
 .flash {
@@ -133,20 +137,20 @@ function confirmDelete(material) {
 }
 
 .flash--success {
-  background: #F0FDF4;
-  border: 1px solid #BBF7D0;
-  color: #15803D;
+  background: rgba(74, 155, 110, 0.12);
+  border: 1px solid rgba(74, 155, 110, 0.4);
+  color: var(--signal-green);
 }
 
 .flash--error {
-  background: #FEF2F2;
-  border: 1px solid #FECACA;
-  color: #B91C1C;
+  background: rgba(214, 69, 69, 0.12);
+  border: 1px solid rgba(214, 69, 69, 0.4);
+  color: var(--signal-red);
 }
 
 .table-wrapper {
   overflow-x: auto;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--hairline-border);
   border-radius: 10px;
 }
 
@@ -160,12 +164,12 @@ function confirmDelete(material) {
 .wc-table td {
   padding: 0.6rem 0.9rem;
   text-align: left;
-  border-bottom: 1px solid #F1F5F9;
+  border-bottom: 1px solid var(--hairline-soft);
 }
 
 .wc-table thead th {
-  background: #F8FAFC;
-  color: #64748B;
+  background: var(--surface-steel);
+  color: var(--data-ink-muted);
   font-weight: 600;
   font-size: 0.75rem;
 }
@@ -176,11 +180,48 @@ function confirmDelete(material) {
   font-variant-numeric: tabular-nums;
 }
 
-.wc-code {
-  font-family: monospace;
-  font-weight: 600;
-  color: #334155;
+.wc-table td {
+  color: var(--data-ink);
 }
+
+.wc-code {
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--data-ink);
+}
+
+.status-toggle {
+  padding: 0.2rem 0.65rem;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.status-toggle--active {
+  background: rgba(74, 155, 110, 0.18);
+  color: var(--signal-green);
+}
+
+.status-toggle--inactive {
+  background: var(--hairline-soft);
+  color: var(--data-ink-muted);
+}
+
+.status-tag {
+  padding: 0.2rem 0.65rem;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.status-tag--active { background: rgba(74, 155, 110, 0.18); color: var(--signal-green); }
+.status-tag--inactive { background: var(--hairline-soft); color: var(--data-ink-muted); }
 
 .actions-col {
   display: flex;
@@ -191,7 +232,7 @@ function confirmDelete(material) {
 .link-action {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #2563EB;
+  color: #5B8DEF;
   cursor: pointer;
   background: none;
   border: none;
@@ -204,12 +245,12 @@ function confirmDelete(material) {
 }
 
 .link-action--danger {
-  color: #DC2626;
+  color: var(--signal-red);
 }
 
 .empty-row {
   text-align: center;
-  color: #94A3B8;
+  color: var(--data-ink-muted);
   padding: 2rem;
 }
 </style>
