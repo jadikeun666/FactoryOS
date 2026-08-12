@@ -326,6 +326,7 @@ function confirmDeleteRouting(r) {
   padding: 1.5rem;
   max-width: 1100px;
   margin: 0 auto;
+  font-family: var(--font-body);
 }
 
 .page-header {
@@ -336,26 +337,28 @@ function confirmDeleteRouting(r) {
 }
 
 .page-eyebrow {
+  font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #F59E0B;
+  color: var(--signal-amber);
   margin: 0 0 0.25rem;
 }
 
 .page-title {
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   margin: 0;
 }
 
 .page-subtitle {
   font-size: 0.8125rem;
-  color: #64748B;
+  color: var(--data-ink-muted);
   margin: 0.35rem 0 0;
-  font-family: monospace;
+  font-family: var(--font-display);
 }
 
 .flash {
@@ -365,15 +368,15 @@ function confirmDeleteRouting(r) {
 }
 
 .flash--success {
-  background: #F0FDF4;
-  border: 1px solid #BBF7D0;
-  color: #15803D;
+  background: rgba(74, 155, 110, 0.12);
+  border: 1px solid rgba(74, 155, 110, 0.4);
+  color: var(--signal-green);
 }
 
 .flash--error {
-  background: #FEF2F2;
-  border: 1px solid #FECACA;
-  color: #B91C1C;
+  background: rgba(214, 69, 69, 0.12);
+  border: 1px solid rgba(214, 69, 69, 0.4);
+  color: var(--signal-red);
 }
 
 .panel {
@@ -381,15 +384,16 @@ function confirmDeleteRouting(r) {
   flex-direction: column;
   gap: 0.85rem;
   padding: 1.25rem;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--panel-graphite);
+  border: 1px solid var(--hairline-border);
   border-radius: 10px;
 }
 
 .panel-title {
+  font-family: var(--font-display);
   font-size: 0.9375rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   margin: 0;
 }
 
@@ -403,8 +407,9 @@ function confirmDeleteRouting(r) {
   display: flex;
   flex-direction: column;
   gap: 0.3rem;
-  font-size: 0.75rem;
-  color: #334155;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  color: var(--data-ink-muted);
   font-weight: 600;
 }
 
@@ -416,9 +421,16 @@ function confirmDeleteRouting(r) {
   padding: 0.45rem 0.6rem;
   font-size: 0.8125rem;
   font-weight: 400;
-  border: 1px solid #E2E8F0;
+  border: 1px solid var(--hairline-border);
   border-radius: 6px;
-  font-family: inherit;
+  font-family: var(--font-body);
+  color: var(--data-ink);
+  background: var(--surface-steel);
+}
+
+.input:focus {
+  outline: 2px solid var(--signal-amber);
+  outline-offset: 1px;
 }
 
 .input--cell {
@@ -439,7 +451,7 @@ function confirmDeleteRouting(r) {
 .field-error {
   font-size: 0.6875rem;
   font-weight: 500;
-  color: #DC2626;
+  color: var(--signal-red);
 }
 
 .form-actions--inline {
@@ -458,12 +470,13 @@ function confirmDeleteRouting(r) {
 .editor-table td {
   padding: 0.5rem 0.6rem;
   text-align: left;
-  border-bottom: 1px solid #F1F5F9;
+  border-bottom: 1px solid var(--hairline-soft);
   vertical-align: middle;
+  color: var(--data-ink);
 }
 
 .editor-table thead th {
-  color: #64748B;
+  color: var(--data-ink-muted);
   font-weight: 600;
   font-size: 0.6875rem;
   text-transform: uppercase;
@@ -476,7 +489,7 @@ function confirmDeleteRouting(r) {
 }
 
 .muted {
-  color: #94A3B8;
+  color: var(--data-ink-muted);
   font-size: 0.75rem;
 }
 
@@ -489,7 +502,7 @@ function confirmDeleteRouting(r) {
 .link-action {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #2563EB;
+  color: #5B8DEF;
   cursor: pointer;
   background: none;
   border: none;
@@ -501,11 +514,11 @@ function confirmDeleteRouting(r) {
 }
 
 .link-action--danger {
-  color: #DC2626;
+  color: var(--signal-red);
 }
 
 .link-action--muted {
-  color: #94A3B8;
+  color: var(--data-ink-muted);
 }
 
 .link-action:disabled {
@@ -515,7 +528,7 @@ function confirmDeleteRouting(r) {
 
 .empty-note {
   font-size: 0.8125rem;
-  color: #94A3B8;
+  color: var(--data-ink-muted);
   margin: 0;
 }
 
@@ -525,7 +538,7 @@ function confirmDeleteRouting(r) {
   align-items: center;
   gap: 0.5rem;
   padding-top: 0.75rem;
-  border-top: 1px dashed #E2E8F0;
+  border-top: 1px dashed var(--hairline-border);
 }
 
 .add-row-form .input {
@@ -535,6 +548,7 @@ function confirmDeleteRouting(r) {
 
 .btn {
   padding: 0.55rem 1.1rem;
+  font-family: var(--font-display);
   font-size: 0.8125rem;
   font-weight: 600;
   border-radius: 8px;
@@ -552,9 +566,11 @@ function confirmDeleteRouting(r) {
 }
 
 .btn--primary {
-  background: #0F172A;
-  color: #F8FAFC;
+  background: var(--signal-amber);
+  color: #1C1F26;
 }
+
+.btn--primary:hover:not(:disabled) { filter: brightness(1.08); }
 
 .btn--primary:disabled {
   opacity: 0.5;
@@ -562,8 +578,10 @@ function confirmDeleteRouting(r) {
 }
 
 .btn--ghost {
-  background: #FFFFFF;
-  border-color: #E2E8F0;
-  color: #334155;
+  background: var(--panel-graphite);
+  border-color: var(--hairline-border);
+  color: var(--data-ink-muted);
 }
+
+.btn--ghost:hover { background: var(--surface-steel); }
 </style>

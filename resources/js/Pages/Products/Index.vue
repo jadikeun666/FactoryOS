@@ -86,6 +86,7 @@ function confirmDelete(product) {
   padding: 1.5rem;
   max-width: 1100px;
   margin: 0 auto;
+  font-family: var(--font-body);
 }
 
 .page-header {
@@ -96,24 +97,26 @@ function confirmDelete(product) {
 }
 
 .page-eyebrow {
+  font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #F59E0B;
+  color: var(--signal-amber);
   margin: 0 0 0.25rem;
 }
 
 .page-title {
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   margin: 0;
 }
 
 .page-subtitle {
   font-size: 0.8125rem;
-  color: #64748B;
+  color: var(--data-ink-muted);
   margin: 0.35rem 0 0;
 }
 
@@ -121,6 +124,7 @@ function confirmDelete(product) {
   display: inline-flex;
   align-items: center;
   padding: 0.55rem 1.1rem;
+  font-family: var(--font-display);
   font-size: 0.8125rem;
   font-weight: 600;
   border-radius: 8px;
@@ -130,12 +134,12 @@ function confirmDelete(product) {
 }
 
 .btn--primary {
-  background: #0F172A;
-  color: #F8FAFC;
+  background: var(--signal-amber);
+  color: #1C1F26;
 }
 
 .btn--primary:hover {
-  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.25);
+  filter: brightness(1.08);
 }
 
 .flash {
@@ -145,20 +149,20 @@ function confirmDelete(product) {
 }
 
 .flash--success {
-  background: #F0FDF4;
-  border: 1px solid #BBF7D0;
-  color: #15803D;
+  background: rgba(74, 155, 110, 0.12);
+  border: 1px solid rgba(74, 155, 110, 0.4);
+  color: var(--signal-green);
 }
 
 .flash--error {
-  background: #FEF2F2;
-  border: 1px solid #FECACA;
-  color: #B91C1C;
+  background: rgba(214, 69, 69, 0.12);
+  border: 1px solid rgba(214, 69, 69, 0.4);
+  color: var(--signal-red);
 }
 
 .table-wrapper {
   overflow-x: auto;
-  border: 1px solid #E5E7EB;
+  border: 1px solid var(--hairline-border);
   border-radius: 10px;
 }
 
@@ -172,12 +176,12 @@ function confirmDelete(product) {
 .wc-table td {
   padding: 0.6rem 0.9rem;
   text-align: left;
-  border-bottom: 1px solid #F1F5F9;
+  border-bottom: 1px solid var(--hairline-soft);
 }
 
 .wc-table thead th {
-  background: #F8FAFC;
-  color: #64748B;
+  background: var(--surface-steel);
+  color: var(--data-ink-muted);
   font-weight: 600;
   font-size: 0.75rem;
 }
@@ -188,29 +192,33 @@ function confirmDelete(product) {
   font-variant-numeric: tabular-nums;
 }
 
+.wc-table td {
+  color: var(--data-ink);
+}
+
 .wc-code {
-  font-family: monospace;
+  font-family: var(--font-display);
   font-weight: 600;
-  color: #334155;
+  color: var(--data-ink);
 }
 
 .count-badge {
   display: inline-block;
   padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  background: #F1F5F9;
-  color: #334155;
+  border-radius: 4px;
+  background: var(--hairline-soft);
+  color: var(--data-ink);
   font-weight: 600;
 }
 
 .count-badge--empty {
-  background: #FEE2E2;
-  color: #B91C1C;
+  background: rgba(214, 69, 69, 0.18);
+  color: var(--signal-red);
 }
 
 .incomplete-tag {
   font-size: 0.6875rem;
-  color: #B45309;
+  color: var(--signal-amber);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -224,7 +232,7 @@ function confirmDelete(product) {
 .link-action {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #2563EB;
+  color: #5B8DEF;
   cursor: pointer;
   background: none;
   border: none;
@@ -237,12 +245,12 @@ function confirmDelete(product) {
 }
 
 .link-action--danger {
-  color: #DC2626;
+  color: var(--signal-red);
 }
 
 .empty-row {
   text-align: center;
-  color: #94A3B8;
+  color: var(--data-ink-muted);
   padding: 2rem;
 }
 </style>
