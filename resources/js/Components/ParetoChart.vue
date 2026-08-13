@@ -67,9 +67,19 @@
  * mengikuti pola fetch di GanttChart.vue (bukan reload Inertia halaman
  * penuh). Endpoint ini pakai middleware auth:sanctum + session stateful,
  * sudah terverifikasi jalan (lihat verifikasi gantt-data sebelumnya).
+ *
+ * MODERNISASI VISUAL TAHAP 2 (2026-08-09): warna SVG di-generate lewat D3
+ * (bukan CSS murni), jadi tidak otomatis ikut var(--token) saat tema di-
+ * toggle. Fix: cssVar() membaca nilai token dari getComputedStyle saat
+ * renderChart() dipanggil, dan watch(theme, ...) memicu render ulang tiap
+ * kali tema berganti. Warna kategori dipetakan ke signal-red/amber +
+ * palet steel-blue/violet custom, konsisten dengan ProductionLogs/Show.vue.
+ * Ini SATU-SATUNYA penambahan JS di file ini — logic fetch/filter/render
+ * lainnya tidak diubah.
  */
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import * as d3 from 'd3'
+import { useTheme } from '@/composables/useTheme'
 
 const props = defineProps({
   initialRows: { type: Array, default: () => [] },
@@ -81,6 +91,8 @@ const props = defineProps({
     default: () => '/api/oee/pareto',
   },
 })
+
+const { theme } = useTheme()
 
 const rows = ref(props.initialRows)
 const dateFrom = ref(props.initialDateFrom)
@@ -101,16 +113,23 @@ const CATEGORY_LABELS = {
   other: 'Lainnya',
 }
 
+// Palet kategori downtime -- konsisten dengan category-tag di
+// ProductionLogs/Show.vue: breakdown=signal-red, setup=signal-amber,
+// material=steel blue custom, operator=violet custom, other=netral.
 const CATEGORY_COLORS = {
-  breakdown: '#DC2626',
-  setup: '#D97706',
-  material: '#2563EB',
-  operator: '#7C3AED',
-  other: '#64748B',
+  breakdown: '#D64545',
+  setup: '#E8A33D',
+  material: '#5B8DEF',
+  operator: '#8B7FD1',
+  other: '#8A93A3',
 }
 
 function categoryLabel(category) {
   return CATEGORY_LABELS[category] ?? category
+}
+
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
 
 function formatNumber(value) {
@@ -162,6 +181,12 @@ function renderChart() {
   const height = 280
   const margin = { top: 20, right: 48, bottom: 60, left: 56 }
 
+  const colorAxisText = cssVar('--data-ink-muted') || '#64748B'
+  const colorAxisLine = cssVar('--hairline-strong') || '#CBD5E1'
+  const colorCumulative = cssVar('--data-ink') || '#0F172A'
+  const colorTooltipBorder = cssVar('--panel-graphite') || '#FFFFFF'
+  const colorThreshold = cssVar('--signal-red') || '#D64545'
+
   const svg = d3.select(svgRef.value)
   svg.selectAll('*').remove()
   svg
@@ -184,22 +209,28 @@ function renderChart() {
     .range([height - margin.bottom, margin.top])
 
   // Sumbu X
-  svg.append('g')
+  const xAxisG = svg.append('g')
     .attr('class', 'x-axis')
     .attr('transform', `translate(0, ${height - margin.bottom})`)
     .call(d3.axisBottom(xScale).tickFormat((d) => categoryLabel(d)))
+  xAxisG.selectAll('text').attr('fill', colorAxisText)
+  xAxisG.selectAll('path, line').attr('stroke', colorAxisLine)
 
   // Sumbu Y kiri (menit)
-  svg.append('g')
+  const yAxisLeftG = svg.append('g')
     .attr('class', 'y-axis-left')
     .attr('transform', `translate(${margin.left}, 0)`)
     .call(d3.axisLeft(yScaleBars).ticks(5))
+  yAxisLeftG.selectAll('text').attr('fill', colorAxisText)
+  yAxisLeftG.selectAll('path, line').attr('stroke', colorAxisLine)
 
   // Sumbu Y kanan (persentase kumulatif)
-  svg.append('g')
+  const yAxisRightG = svg.append('g')
     .attr('class', 'y-axis-right')
     .attr('transform', `translate(${width - margin.right}, 0)`)
     .call(d3.axisRight(yScaleLine).ticks(5).tickFormat((d) => `${d}%`))
+  yAxisRightG.selectAll('text').attr('fill', colorAxisText)
+  yAxisRightG.selectAll('path, line').attr('stroke', colorAxisLine)
 
   const tooltip = ensureTooltip()
 
@@ -214,7 +245,7 @@ function renderChart() {
     .attr('y', (d) => yScaleBars(Number(d.total_minutes)))
     .attr('width', xScale.bandwidth())
     .attr('height', (d) => (height - margin.bottom) - yScaleBars(Number(d.total_minutes)))
-    .attr('fill', (d) => CATEGORY_COLORS[d.category] ?? '#94A3B8')
+    .attr('fill', (d) => CATEGORY_COLORS[d.category] ?? '#8A93A3')
     .attr('rx', 3)
     .style('cursor', 'pointer')
     .on('mouseover', (event, d) => {
@@ -239,6 +270,8 @@ function renderChart() {
     .datum(data)
     .attr('class', 'cumulative-line')
     .attr('fill', 'none')
+    .attr('stroke', colorCumulative)
+    .attr('stroke-width', 2)
     .attr('d', lineGen)
 
   svg.append('g')
@@ -249,6 +282,9 @@ function renderChart() {
     .attr('cx', (d) => xScale(d.category) + xScale.bandwidth() / 2)
     .attr('cy', (d) => yScaleLine(Number(d.cumulative)))
     .attr('r', 4)
+    .attr('fill', colorCumulative)
+    .attr('stroke', colorTooltipBorder)
+    .attr('stroke-width', 1.5)
 
   // Garis 80% (referensi vital few)
   svg.append('line')
@@ -257,6 +293,10 @@ function renderChart() {
     .attr('x2', width - margin.right)
     .attr('y1', yScaleLine(80))
     .attr('y2', yScaleLine(80))
+    .attr('stroke', colorThreshold)
+    .attr('stroke-width', 1)
+    .attr('stroke-dasharray', '4 3')
+    .attr('opacity', 0.6)
 }
 
 let tooltipEl = null
@@ -285,6 +325,7 @@ onBeforeUnmount(() => {
 
 watch(rows, () => nextTick(() => renderChart()))
 watch(() => props.workCenterId, () => fetchPareto())
+watch(theme, () => nextTick(() => renderChart()))
 </script>
 
 <style scoped>
@@ -293,9 +334,10 @@ watch(() => props.workCenterId, () => fetchPareto())
   flex-direction: column;
   gap: 1rem;
   padding: 1.25rem;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--panel-graphite);
+  border: 1px solid var(--hairline-border);
   border-radius: 10px;
+  font-family: var(--font-body);
 }
 
 .pareto-header {
@@ -307,14 +349,15 @@ watch(() => props.workCenterId, () => fetchPareto())
 }
 
 .pareto-title {
+  font-family: var(--font-display);
   font-size: 0.9375rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
 }
 
 .pareto-subtitle {
   font-size: 0.75rem;
-  color: #94A3B8;
+  color: var(--data-ink-muted);
   margin: 0.15rem 0 0;
 }
 
@@ -329,29 +372,39 @@ watch(() => props.workCenterId, () => fetchPareto())
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
-  font-size: 0.6875rem;
-  color: #475569;
+  font-family: var(--font-display);
+  font-size: 0.625rem;
+  color: var(--data-ink-muted);
 }
 
 .input {
   padding: 0.35rem 0.55rem;
   font-size: 0.75rem;
-  border: 1px solid #E2E8F0;
+  font-family: var(--font-body);
+  border: 1px solid var(--hairline-border);
   border-radius: 6px;
+  color: var(--data-ink);
+  background: var(--surface-steel);
+}
+
+.input:focus {
+  outline: 2px solid var(--signal-amber);
+  outline-offset: 1px;
 }
 
 .btn {
   padding: 0.4rem 0.85rem;
+  font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 600;
   border-radius: 6px;
-  border: 1px solid #E2E8F0;
-  background: #FFFFFF;
-  color: #334155;
+  border: 1px solid var(--hairline-border);
+  background: var(--panel-graphite);
+  color: var(--data-ink-muted);
   cursor: pointer;
 }
 
-.btn:hover:not(:disabled) { background: #F8FAFC; }
+.btn:hover:not(:disabled) { background: var(--surface-steel); }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .chart-container {
@@ -363,7 +416,7 @@ watch(() => props.workCenterId, () => fetchPareto())
 .chart-empty {
   padding: 2.5rem 1rem;
   text-align: center;
-  color: #94A3B8;
+  color: var(--data-ink-muted);
   font-size: 0.8125rem;
 }
 
@@ -376,16 +429,17 @@ watch(() => props.workCenterId, () => fetchPareto())
 .pareto-table th {
   text-align: left;
   padding: 0.5rem 0.7rem;
-  background: #F8FAFC;
-  color: #64748B;
+  background: var(--surface-steel);
+  color: var(--data-ink-muted);
   font-size: 0.6875rem;
   text-transform: uppercase;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid var(--hairline-border);
 }
 
 .pareto-table td {
   padding: 0.5rem 0.7rem;
-  border-bottom: 1px solid #F1F5F9;
+  border-bottom: 1px solid var(--hairline-soft);
+  color: var(--data-ink);
 }
 
 .pareto-table th.num,
@@ -397,60 +451,41 @@ watch(() => props.workCenterId, () => fetchPareto())
 .category-tag {
   display: inline-block;
   padding: 0.1rem 0.5rem;
-  border-radius: 999px;
+  border-radius: 4px;
+  font-family: var(--font-display);
   font-size: 0.6875rem;
   font-weight: 600;
-  background: #F1F5F9;
-  color: #475569;
+  background: var(--hairline-soft);
+  color: var(--data-ink-muted);
 }
 
-.category-tag--breakdown { background: #FEE2E2; color: #B91C1C; }
-.category-tag--setup { background: #FEF3C7; color: #92400E; }
-.category-tag--material { background: #DBEAFE; color: #1D4ED8; }
-.category-tag--operator { background: #EDE9FE; color: #6D28D9; }
-.category-tag--other { background: #F1F5F9; color: #475569; }
+.category-tag--breakdown { background: rgba(214, 69, 69, 0.18); color: var(--signal-red); }
+.category-tag--setup { background: rgba(232, 163, 61, 0.18); color: var(--signal-amber); }
+.category-tag--material { background: rgba(91, 141, 239, 0.18); color: #5B8DEF; }
+.category-tag--operator { background: rgba(139, 127, 209, 0.18); color: #8B7FD1; }
+.category-tag--other { background: var(--hairline-soft); color: var(--data-ink-muted); }
 
 :deep(.x-axis text),
 :deep(.y-axis-left text),
 :deep(.y-axis-right text) {
+  font-family: var(--font-display);
   font-size: 0.6875rem;
-  fill: #64748B;
-}
-
-:deep(.x-axis path), :deep(.x-axis line),
-:deep(.y-axis-left path), :deep(.y-axis-left line),
-:deep(.y-axis-right path), :deep(.y-axis-right line) {
-  stroke: #CBD5E1;
-}
-
-:deep(.cumulative-line) {
-  stroke: #0F172A;
-  stroke-width: 2;
-}
-
-:deep(.cumulative-point) {
-  fill: #0F172A;
-  stroke: #FFFFFF;
-  stroke-width: 1.5;
-}
-
-:deep(.threshold-80) {
-  stroke: #EF4444;
-  stroke-width: 1;
-  stroke-dasharray: 4 3;
-  opacity: 0.6;
 }
 </style>
 
 <style>
+/* Tooltip di-append ke <body>, styling global (bukan scoped). Tetap
+   ikut var(--token) karena data-theme ada di <html>. */
 .pareto-tooltip {
-  background: #0F172A;
-  color: #F8FAFC;
+  font-family: var(--font-body);
+  background: var(--panel-graphite-raised);
+  color: var(--data-ink);
+  border: 1px solid var(--hairline-border);
   border-radius: 6px;
   padding: 8px 12px;
   font-size: 0.75rem;
   line-height: 1.4;
-  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
   z-index: 9999;
   pointer-events: none;
 }

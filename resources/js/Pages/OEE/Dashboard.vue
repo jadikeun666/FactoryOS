@@ -114,11 +114,21 @@
  * Ganti mesin memicu fetch ulang trend + snapshot terbaru via endpoint
  * /api/oee/trend (ParetoChart.vue fetch pareto-nya sendiri lewat watch
  * pada prop work-center-id).
+ *
+ * MODERNISASI VISUAL TAHAP 2 (2026-08-09): warna trend line SVG (4 seri:
+ * OEE/Availability/Performance/Quality) di-generate lewat D3, jadi tidak
+ * otomatis ikut var(--token) saat tema di-toggle. Fix: cssVar() membaca
+ * token dari getComputedStyle saat renderTrend() dipanggil, dan
+ * watch(theme, ...) memicu render ulang tiap kali tema berganti. Palet
+ * seri: OEE=data-ink (garis utama tebal), Availability=steel-blue,
+ * Performance=signal-amber, Quality=signal-green. Ini SATU-SATUNYA
+ * penambahan JS di file ini -- fetch/export/logic lainnya tidak diubah.
  */
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import * as d3 from 'd3'
 import OeeGauge from '@/Components/OeeGauge.vue'
 import ParetoChart from '@/Components/ParetoChart.vue'
+import { useTheme } from '@/composables/useTheme'
 
 const props = defineProps({
   workCenters: { type: Array, required: true },
@@ -129,6 +139,8 @@ const props = defineProps({
   initialBenchmark: { type: Object, default: null },
   dateRange: { type: Object, required: true },
 })
+
+const { theme } = useTheme()
 
 const selectedWorkCenterId = ref(props.selectedWorkCenterId)
 const snapshot = ref(props.initialSnapshot)
@@ -290,6 +302,10 @@ function switchWorkCenter() {
   fetchWorkCenterData(selectedWorkCenterId.value)
 }
 
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
+
 function renderTrend() {
   if (!trendSvgRef.value || !trendContainer.value) return
   if (trend.value.length === 0) return
@@ -298,6 +314,11 @@ function renderTrend() {
   const width = Math.max(trendContainer.value.clientWidth, 480)
   const height = 220
   const margin = { top: 20, right: 24, bottom: 32, left: 44 }
+
+  const colorAxisText = cssVar('--data-ink-muted') || '#64748B'
+  const colorAxisLine = cssVar('--hairline-strong') || '#CBD5E1'
+  const colorLegendText = cssVar('--data-ink-muted') || '#475569'
+  const colorOee = cssVar('--data-ink') || '#0F172A'
 
   const svg = d3.select(trendSvgRef.value)
   svg.selectAll('*').remove()
@@ -311,21 +332,25 @@ function renderTrend() {
     .domain([0, 1])
     .range([height - margin.bottom, margin.top])
 
-  svg.append('g')
+  const xAxisG = svg.append('g')
     .attr('class', 'x-axis')
     .attr('transform', `translate(0, ${height - margin.bottom})`)
     .call(d3.axisBottom(xScale).ticks(Math.min(data.length, 6)).tickFormat(d3.timeFormat('%d %b')))
+  xAxisG.selectAll('text').attr('fill', colorAxisText)
+  xAxisG.selectAll('path, line').attr('stroke', colorAxisLine)
 
-  svg.append('g')
+  const yAxisG = svg.append('g')
     .attr('class', 'y-axis')
     .attr('transform', `translate(${margin.left}, 0)`)
     .call(d3.axisLeft(yScale).ticks(5).tickFormat((d) => `${Math.round(d * 100)}%`))
+  yAxisG.selectAll('text').attr('fill', colorAxisText)
+  yAxisG.selectAll('path, line').attr('stroke', colorAxisLine)
 
   const series = [
-    { key: 'oee', color: '#0F172A', label: 'OEE' },
-    { key: 'availability', color: '#2563EB', label: 'Availability' },
-    { key: 'performance', color: '#D97706', label: 'Performance' },
-    { key: 'quality', color: '#16A34A', label: 'Quality' },
+    { key: 'oee', color: colorOee, label: 'OEE' },
+    { key: 'availability', color: '#5B8DEF', label: 'Availability' },
+    { key: 'performance', color: '#E8A33D', label: 'Performance' },
+    { key: 'quality', color: '#4A9B6E', label: 'Quality' },
   ]
 
   series.forEach((s) => {
@@ -338,7 +363,7 @@ function renderTrend() {
       .attr('fill', 'none')
       .attr('stroke', s.color)
       .attr('stroke-width', s.key === 'oee' ? 2.5 : 1.5)
-      .attr('opacity', s.key === 'oee' ? 1 : 0.6)
+      .attr('opacity', s.key === 'oee' ? 1 : 0.75)
       .attr('d', lineGen)
 
     svg.append('g')
@@ -350,14 +375,14 @@ function renderTrend() {
       .attr('cy', (d) => yScale(Number(d[s.key])))
       .attr('r', s.key === 'oee' ? 4 : 3)
       .attr('fill', s.color)
-      .attr('opacity', s.key === 'oee' ? 1 : 0.6)
+      .attr('opacity', s.key === 'oee' ? 1 : 0.75)
   })
 
   const legend = svg.append('g').attr('transform', `translate(${margin.left}, ${margin.top - 10})`)
   series.forEach((s, i) => {
     const g = legend.append('g').attr('transform', `translate(${i * 110}, 0)`)
     g.append('rect').attr('width', 10).attr('height', 10).attr('fill', s.color).attr('rx', 2)
-    g.append('text').attr('x', 14).attr('y', 9).attr('class', 'legend-text').text(s.label)
+    g.append('text').attr('x', 14).attr('y', 9).attr('class', 'legend-text').attr('fill', colorLegendText).text(s.label)
   })
 }
 
@@ -445,6 +470,7 @@ function pollExportTrendStatus() {
 }
 
 watch(trend, () => nextTick(() => renderTrend()))
+watch(theme, () => nextTick(() => renderTrend()))
 </script>
 
 <style scoped>
@@ -455,6 +481,7 @@ watch(trend, () => nextTick(() => renderTrend()))
   padding: 1.5rem;
   max-width: 1200px;
   margin: 0 auto;
+  font-family: var(--font-body);
 }
 
 .page-header {
@@ -466,24 +493,26 @@ watch(trend, () => nextTick(() => renderTrend()))
 }
 
 .page-eyebrow {
+  font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #F59E0B;
+  color: var(--signal-amber);
   margin: 0 0 0.25rem;
 }
 
 .page-title {
+  font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   margin: 0;
 }
 
 .page-subtitle {
   font-size: 0.8125rem;
-  color: #64748B;
+  color: var(--data-ink-muted);
   margin: 0.35rem 0 0;
 }
 
@@ -491,16 +520,25 @@ watch(trend, () => nextTick(() => renderTrend()))
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
-  font-size: 0.75rem;
-  color: #475569;
+  font-family: var(--font-display);
+  font-size: 0.6875rem;
+  color: var(--data-ink-muted);
 }
 
 .input {
   padding: 0.45rem 0.65rem;
   font-size: 0.8125rem;
-  border: 1px solid #E2E8F0;
+  font-family: var(--font-body);
+  border: 1px solid var(--hairline-border);
   border-radius: 6px;
+  color: var(--data-ink);
+  background: var(--panel-graphite);
   min-width: 220px;
+}
+
+.input:focus {
+  outline: 2px solid var(--signal-amber);
+  outline-offset: 1px;
 }
 
 .input--date {
@@ -519,6 +557,7 @@ watch(trend, () => nextTick(() => renderTrend()))
   align-items: center;
   gap: 0.4rem;
   padding: 0.5rem 1rem;
+  font-family: var(--font-display);
   font-size: 0.8125rem;
   font-weight: 600;
   border-radius: 8px;
@@ -530,11 +569,11 @@ watch(trend, () => nextTick(() => renderTrend()))
 .btn:active { transform: translateY(1px); }
 
 .btn--primary {
-  background: #0F172A;
-  color: #F8FAFC;
+  background: var(--signal-amber);
+  color: #1C1F26;
 }
 
-.btn--primary:hover:not(:disabled) { background: #1E293B; }
+.btn--primary:hover:not(:disabled) { filter: brightness(1.08); }
 
 .btn--primary:disabled {
   opacity: 0.6;
@@ -542,12 +581,12 @@ watch(trend, () => nextTick(() => renderTrend()))
 }
 
 .btn--secondary {
-  background: #FFFFFF;
-  border-color: #E2E8F0;
-  color: #334155;
+  background: var(--panel-graphite);
+  border-color: var(--hairline-border);
+  color: var(--data-ink-muted);
 }
 
-.btn--secondary:hover:not(:disabled) { background: #F8FAFC; }
+.btn--secondary:hover:not(:disabled) { background: var(--surface-steel); }
 
 .btn--secondary:disabled {
   opacity: 0.6;
@@ -566,8 +605,8 @@ watch(trend, () => nextTick(() => renderTrend()))
 
 .benchmark-card {
   padding: 1.25rem;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--panel-graphite);
+  border: 1px solid var(--hairline-border);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
@@ -575,9 +614,10 @@ watch(trend, () => nextTick(() => renderTrend()))
 }
 
 .section-title {
+  font-family: var(--font-display);
   font-size: 0.9375rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   margin: 0;
 }
 
@@ -592,13 +632,13 @@ watch(trend, () => nextTick(() => renderTrend()))
   flex-direction: column;
   gap: 0.2rem;
   padding: 0.65rem;
-  background: #F8FAFC;
+  background: var(--surface-steel);
   border-radius: 8px;
 }
 
 .benchmark-item__label {
   font-size: 0.6875rem;
-  color: #64748B;
+  color: var(--data-ink-muted);
   font-weight: 600;
 }
 
@@ -609,36 +649,38 @@ watch(trend, () => nextTick(() => renderTrend()))
 }
 
 .benchmark-item__actual {
+  font-family: var(--font-display);
   font-size: 1.125rem;
   font-weight: 700;
-  color: #0F172A;
+  color: var(--data-ink);
   font-variant-numeric: tabular-nums;
 }
 
 .benchmark-item__target {
   font-size: 0.6875rem;
-  color: #94A3B8;
+  color: var(--data-ink-muted);
 }
 
 .benchmark-item__gap {
+  font-family: var(--font-display);
   font-size: 0.75rem;
   font-weight: 600;
   width: fit-content;
 }
 
-.benchmark-item__gap--good { color: #16A34A; }
-.benchmark-item__gap--bad { color: #DC2626; }
+.benchmark-item__gap--good { color: var(--signal-green); }
+.benchmark-item__gap--bad { color: var(--signal-red); }
 
 .benchmark-card--empty .empty-text {
-  color: #94A3B8;
+  color: var(--data-ink-muted);
   font-size: 0.8125rem;
   margin: 0;
 }
 
 .trend-section {
   padding: 1.25rem;
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: var(--panel-graphite);
+  border: 1px solid var(--hairline-border);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
@@ -655,7 +697,7 @@ watch(trend, () => nextTick(() => renderTrend()))
 
 .trend-subtitle {
   font-size: 0.75rem;
-  color: #94A3B8;
+  color: var(--data-ink-muted);
   margin: 0;
 }
 
@@ -668,24 +710,19 @@ watch(trend, () => nextTick(() => renderTrend()))
 .trend-empty {
   padding: 2.5rem 1rem;
   text-align: center;
-  color: #94A3B8;
+  color: var(--data-ink-muted);
   font-size: 0.8125rem;
 }
 
 :deep(.x-axis text),
 :deep(.y-axis text) {
+  font-family: var(--font-display);
   font-size: 0.6875rem;
-  fill: #64748B;
-}
-
-:deep(.x-axis path), :deep(.x-axis line),
-:deep(.y-axis path), :deep(.y-axis line) {
-  stroke: #CBD5E1;
 }
 
 :deep(.legend-text) {
+  font-family: var(--font-display);
   font-size: 0.6875rem;
-  fill: #475569;
 }
 
 .pareto-section {
