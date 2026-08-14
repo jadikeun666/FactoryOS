@@ -42,7 +42,7 @@
             </td>
             <td>
               <span v-if="p.bill_of_materials_count === 0 || p.routings_count === 0" class="incomplete-tag">
-                ⚠️ Belum lengkap
+                <Icon name="alert-triangle" size="12" /> Belum lengkap
               </span>
             </td>
             <td v-if="canManage" class="actions-col">
@@ -61,6 +61,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import Icon from '@/Components/Icon.vue'
 import { Link, router, usePage } from '@inertiajs/vue3'
 
 defineProps({

@@ -10,21 +10,25 @@
         </p>
       </div>
       <div class="header-actions">
-        <button
+<button
           type="button"
           class="btn btn--secondary"
           :disabled="exporting || !latestMrpRunId"
           @click="exportMrpExcel"
         >
-          {{ exporting ? '⏳ Memproses...' : '⬇ Export Excel' }}
+          <Icon v-if="exporting" name="loader" size="14" spin />
+          <Icon v-else name="download" size="14" />
+          {{ exporting ? 'Memproses...' : 'Export Excel' }}
         </button>
-        <button
+<button
           type="button"
           class="btn btn--primary"
           :disabled="isRunningMrp || !latestScheduleId"
           @click="runMrpAgain"
         >
-          {{ isRunningMrp ? 'Menjalankan…' : '↺ Jalankan MRP Ulang' }}
+          <Icon v-if="isRunningMrp" name="loader" size="14" spin />
+          <Icon v-else name="refresh-cw" size="14" />
+          {{ isRunningMrp ? 'Menjalankan…' : 'Jalankan MRP Ulang' }}
         </button>
       </div>
     </header>
@@ -79,6 +83,7 @@ import { router } from '@inertiajs/vue3'
 import AlertBanner from '@/Components/AlertBanner.vue'
 import RopGauge from '@/Components/RopGauge.vue'
 import MrpGrid from '@/Components/MrpGrid.vue'
+import Icon from '@/Components/Icon.vue'
 
 const props = defineProps({
   initialAlerts: { type: Array, default: () => [] },

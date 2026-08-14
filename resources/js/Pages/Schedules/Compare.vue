@@ -9,7 +9,7 @@
           Pilih salah satu untuk diterapkan ke jadwal produksi.
         </p>
       </div>
-      <Link :href="indexUrl" class="btn btn--ghost">← Kembali</Link>
+      <Link :href="indexUrl" class="btn btn--ghost"><Icon name="arrow-left" size="14" /> Kembali</Link>
     </header>
 
     <section class="algo-grid">
@@ -132,6 +132,7 @@
  * (computed/ref/fungsi) di file ini.
  */
 import { computed, ref } from 'vue'
+import Icon from '@/Components/Icon.vue'
 import { Link, router } from '@inertiajs/vue3'
 
 const props = defineProps({

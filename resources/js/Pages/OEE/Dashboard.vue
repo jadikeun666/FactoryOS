@@ -23,8 +23,8 @@
         </label>
 
         <button class="btn btn--primary" :disabled="exporting" @click="exportOeePdf">
-          <span v-if="exporting">⏳ Memproses...</span>
-          <span v-else>⬇ Export PDF Harian</span>
+          <span v-if="exporting"><Icon name="loader" size="14" spin /> Memproses...</span>
+          <span v-else><Icon name="download" size="14" /> Export PDF Harian</span>
         </button>
 
         <label class="wc-select">
@@ -33,8 +33,8 @@
         </label>
 
         <button class="btn btn--secondary" :disabled="exportingTrend" @click="exportOeeTrendExcel">
-          <span v-if="exportingTrend">⏳ Memproses...</span>
-          <span v-else>⬇ Export Excel Trend</span>
+          <span v-if="exportingTrend"><Icon name="loader" size="14" spin /> Memproses...</span>
+          <span v-else><Icon name="download" size="14" /> Export Excel Trend</span>
         </button>
       </div>
     </header>
@@ -127,6 +127,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick, watch } from 'vue'
 import * as d3 from 'd3'
 import OeeGauge from '@/Components/OeeGauge.vue'
+import Icon from '@/Components/Icon.vue'
 import ParetoChart from '@/Components/ParetoChart.vue'
 import { useTheme } from '@/composables/useTheme'
 

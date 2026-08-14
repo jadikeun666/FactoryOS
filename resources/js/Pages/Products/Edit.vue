@@ -6,7 +6,7 @@
         <h1 class="page-title">{{ product.name }}</h1>
         <p class="page-subtitle">{{ product.sku }} · {{ product.unit }}</p>
       </div>
-      <Link href="/products" class="btn btn--ghost">← Kembali</Link>
+      <Link href="/products" class="btn btn--ghost"><Icon name="arrow-left" size="14" /> Kembali</Link>
     </header>
 
     <div v-if="flashSuccess" class="flash flash--success">{{ flashSuccess }}</div>
@@ -189,6 +189,7 @@
  * di backend (storeBom()), ini murni UX preventif.
  */
 import { computed, ref } from 'vue'
+import Icon from '@/Components/Icon.vue'
 import { Link, router, useForm, usePage } from '@inertiajs/vue3'
 
 const props = defineProps({

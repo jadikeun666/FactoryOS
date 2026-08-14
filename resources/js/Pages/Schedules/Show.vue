@@ -11,10 +11,10 @@
       </div>
       <div class="header-actions">
         <button class="btn btn--primary" :disabled="exporting" @click="exportPdf">
-          <span v-if="exporting">⏳ Memproses...</span>
-          <span v-else>⬇ Export PDF</span>
+          <span v-if="exporting"><Icon name="loader" size="14" spin /> Memproses...</span>
+          <span v-else><Icon name="download" size="14" /> Export PDF</span>
         </button>
-        <Link :href="compareUrl" class="btn btn--ghost">↺ Bandingkan Ulang</Link>
+        <Link :href="compareUrl" class="btn btn--ghost"><Icon name="refresh-cw" size="14" /> Bandingkan Ulang</Link>
       </div>
     </header>
     <div class="gantt-shell">
@@ -35,6 +35,7 @@
  *   compareUrl:   url kembali ke halaman Compare.vue (opsional)
  */
 import { ref, computed, onBeforeUnmount } from 'vue'
+import Icon from '@/Components/Icon.vue'
 import { Link } from '@inertiajs/vue3'
 import GanttChart from '@/Components/GanttChart.vue'
 const props = defineProps({

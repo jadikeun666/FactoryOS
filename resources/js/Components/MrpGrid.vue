@@ -12,7 +12,9 @@
         </div>
       </div>
       <button type="button" class="btn btn--ghost btn--small" :disabled="isLoading" @click="refresh">
-        {{ isLoading ? 'Memuat…' : '↻ Refresh' }}
+        <Icon v-if="isLoading" name="loader" size="12" spin />
+        <Icon v-else name="refresh-cw" size="12" />
+        {{ isLoading ? 'Memuat…' : 'Refresh' }}
       </button>
     </div>
 
@@ -86,6 +88,7 @@
  * release_date terpisah -- kolom tabel period_date di sini murni need-date.
  */
 import { ref, computed, watch } from 'vue'
+import Icon from '@/Components/Icon.vue'
 
 const props = defineProps({
   initialMrpRun: { type: Object, default: null },

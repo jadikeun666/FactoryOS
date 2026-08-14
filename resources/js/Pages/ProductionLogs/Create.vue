@@ -6,7 +6,7 @@
         <h1 class="page-title">Log Produksi Baru</h1>
         <p class="page-subtitle">Isi log per shift dalam satu form (US-06 &amp; US-07).</p>
       </div>
-      <Link href="/production-logs" class="btn btn--ghost">← Kembali</Link>
+      <Link href="/production-logs" class="btn btn--ghost"><Icon name="arrow-left" size="14" /> Kembali</Link>
     </header>
 
     <form class="form-card" @submit.prevent="submit">
@@ -108,7 +108,7 @@
             <input v-model="event.reason_detail" type="text" maxlength="255" class="input" placeholder="opsional" />
           </label>
 
-          <button type="button" class="icon-btn" title="Hapus baris ini" @click="removeDowntimeEvent(idx)">✕</button>
+          <button type="button" class="icon-btn" title="Hapus baris ini" @click="removeDowntimeEvent(idx)"><Icon name="x" size="12" /></button>
         </div>
 
         <p v-if="form.errors['downtime_events']" class="field-error">{{ form.errors['downtime_events'] }}</p>
@@ -134,6 +134,7 @@
  * nested downtime_events dalam satu request sesuai US-07.
  */
 import { Link, useForm } from '@inertiajs/vue3'
+import Icon from '@/Components/Icon.vue'
 
 const props = defineProps({
   workCenters: { type: Array, default: () => [] },

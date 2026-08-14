@@ -336,7 +336,7 @@ function renderGantt() {
         Mulai: ${formatTime(d.start_at)}<br>
         Selesai: ${formatTime(d.end_at)}<br>
         Durasi: ${d.duration_minutes} menit<br>
-        Status: ${d.is_late ? '⚠️ Terlambat' : '✅ Tepat waktu'}
+        Status: ${d.is_late ? '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg> Terlambat' : '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="vertical-align:-1px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg> Tepat waktu'}
       `)
     })
     .on('mousemove', (event) => {

@@ -8,7 +8,7 @@
           {{ productionLog.work_center?.name ?? '–' }} · {{ productionLog.shift?.name ?? '–' }}
         </p>
       </div>
-      <Link :href="showUrl" class="btn btn--ghost">← Kembali ke Detail</Link>
+      <Link :href="showUrl" class="btn btn--ghost"><Icon name="arrow-left" size="14" /> Kembali ke Detail</Link>
     </header>
 
     <form class="form-card" @submit.prevent="submit">
@@ -88,6 +88,7 @@
  * saya siapkan diff-nya (tidak saya ubah sendiri tanpa konfirmasi).
  */
 import { computed } from 'vue'
+import Icon from '@/Components/Icon.vue'
 import { Link, useForm } from '@inertiajs/vue3'
 
 const props = defineProps({

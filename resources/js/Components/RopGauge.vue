@@ -3,7 +3,9 @@
     <div class="rop-console__header">
       <span class="rop-console__title">Status Stok vs ROP</span>
       <button type="button" class="btn btn--ghost btn--small" :disabled="isLoading" @click="refresh">
-        {{ isLoading ? 'Memuat…' : '↻ Refresh' }}
+        <Icon v-if="isLoading" name="loader" size="12" spin />
+        <Icon v-else name="refresh-cw" size="12" />
+        {{ isLoading ? 'Memuat…' : 'Refresh' }}
       </button>
     </div>
 
@@ -95,6 +97,8 @@
  * logic JS (computed/fungsi severity/scale/format) di file ini.
  */
 import { ref, computed, onMounted } from 'vue'
+import Icon from '@/Components/Icon.vue'
+
 
 const props = defineProps({
   initialMaterials: { type: Array, default: () => [] },

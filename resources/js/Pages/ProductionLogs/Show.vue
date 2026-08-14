@@ -14,7 +14,7 @@
         </p>
       </div>
       <div class="header-actions">
-        <Link href="/production-logs" class="btn btn--ghost">← Daftar</Link>
+        <Link href="/production-logs" class="btn btn--ghost"><Icon name="arrow-left" size="14" /> Daftar</Link>
         <Link v-if="!productionLog.is_validated" :href="editUrl" class="btn btn--ghost">Edit</Link>
         <button v-if="!productionLog.is_validated" type="button" class="btn btn--primary" @click="validateLog">
           Validasi
@@ -141,6 +141,7 @@
  * sesungguhnya tetap di ProductionLogPolicy sisi server.
  */
 import { ref, computed } from 'vue'
+import Icon from '@/Components/Icon.vue'
 import { Link, router, useForm } from '@inertiajs/vue3'
 
 const props = defineProps({
