@@ -22,56 +22,26 @@
       </div>
 
       <nav class="sidebar__nav">
-        <Link href="/dashboard" class="nav-link nav-link--top" :class="{ 'nav-link--active': isActive('/dashboard', true) }">
+        <Link
+          href="/dashboard"
+          class="nav-link nav-link--top"
+          :class="{ 'nav-link--active': isActive('/dashboard', true) }"
+        >
           <Icon name="layout-dashboard" size="15" />
           <span>Dashboard</span>
         </Link>
 
-        <div class="nav-group">
-          <span class="nav-group__label">Engine 1 — Scheduler</span>
-          <Link href="/work-orders" class="nav-link" :class="{ 'nav-link--active': isActive('/work-orders') }">
-            <Icon name="clipboard-list" size="15" />
-            <span>Work Order</span>
-          </Link>
-          <Link href="/schedules/compare" class="nav-link" :class="{ 'nav-link--active': isActive('/schedules') }">
-            <Icon name="activity" size="15" />
-            <span>Perbandingan Jadwal</span>
-          </Link>
-        </div>
-
-        <div class="nav-group">
-          <span class="nav-group__label">Engine 2 — OEE</span>
-          <Link href="/production-logs" class="nav-link" :class="{ 'nav-link--active': isActive('/production-logs') }">
-            <Icon name="clipboard-list" size="15" />
-            <span>Log Produksi</span>
-          </Link>
-          <Link href="/oee/dashboard" class="nav-link" :class="{ 'nav-link--active': isActive('/oee') }">
-            <Icon name="activity" size="15" />
-            <span>OEE Dashboard</span>
-          </Link>
-        </div>
-
-        <div class="nav-group">
-          <span class="nav-group__label">Engine 3 — Inventory</span>
-          <Link href="/mrp" class="nav-link" :class="{ 'nav-link--active': isActive('/mrp') }">
-            <Icon name="package" size="15" />
-            <span>Dashboard MRP</span>
-          </Link>
-        </div>
-
-        <div class="nav-group">
-          <span class="nav-group__label">Master Data</span>
-          <Link href="/work-centers" class="nav-link" :class="{ 'nav-link--active': isActive('/work-centers') }">
-            <Icon name="database" size="15" />
-            <span>Work Center</span>
-          </Link>
-          <Link href="/materials" class="nav-link" :class="{ 'nav-link--active': isActive('/materials') }">
-            <Icon name="database" size="15" />
-            <span>Material</span>
-          </Link>
-          <Link href="/products" class="nav-link" :class="{ 'nav-link--active': isActive('/products') }">
-            <Icon name="database" size="15" />
-            <span>Produk</span>
+        <div v-for="group in visibleGroups" :key="group.label" class="nav-group">
+          <span class="nav-group__label">{{ group.label }}</span>
+          <Link
+            v-for="item in group.items"
+            :key="item.href"
+            :href="item.href"
+            class="nav-link"
+            :class="{ 'nav-link--active': isActive(item.activePrefix ?? item.href) }"
+          >
+            <Icon :name="item.icon" size="15" />
+            <span>{{ item.label }}</span>
           </Link>
         </div>
       </nav>
@@ -100,9 +70,20 @@
  * (semua halaman standalone). Body diberi display:flex via app.css supaya
  * sidebar mendorong konten #app, bukan menimpa (overlay) di desktop.
  *
- * Deteksi halaman aktif: usePage().url dibandingkan prefix path setiap
- * link. exact=true untuk /dashboard (supaya tidak ikut aktif di path
- * lain yang kebetulan diawali sama).
+ * NAV PER ROLE (checkpoint kedua, 2026-08-09): setiap grup nav punya
+ * daftar `roles` yang boleh melihatnya. Ini MURNI penyaringan tampilan
+ * (UX) berdasarkan deskripsi target user di docs/prd.md -- BUKAN
+ * pengganti otorisasi backend, yang tetap jadi source of truth via
+ * Policy masing-masing (WorkOrderPolicy, WorkCenterPolicy, dst). Pola
+ * ini konsisten dengan `canManage` client-side yang sudah dipakai di
+ * WorkCenters/Index.vue dkk.
+ *
+ * Pemetaan (dikonfirmasi user):
+ *   Work Order, Perbandingan Jadwal -> admin, production_manager, ppic
+ *   Log Produksi                    -> admin, ppic, operator
+ *   OEE Dashboard                   -> admin, production_manager, ppic
+ *   Dashboard MRP, Master Data      -> admin, ppic
+ *   Dashboard (KPI)                 -> semua role, TIDAK difilter
  *
  * Info user (nama, role, logout) diambil dari shared prop Inertia
  * auth.user (HandleInertiaRequests::share(), sudah expose role sejak
@@ -116,11 +97,61 @@ const page = usePage()
 const isOpen = ref(false)
 
 const user = computed(() => page.props.auth?.user ?? null)
+const currentRole = computed(() => user.value?.role ?? null)
+
 const userInitial = computed(() => (user.value?.name?.charAt(0) ?? '?').toUpperCase())
 const roleLabel = computed(() => {
-  const role = user.value?.role
   const labels = { admin: 'Admin', ppic: 'PPIC', operator: 'Operator', production_manager: 'Production Manager' }
-  return labels[role] ?? role ?? '–'
+  return labels[currentRole.value] ?? currentRole.value ?? '–'
+})
+
+const NAV_GROUPS = [
+  {
+    label: 'Engine 1 — Scheduler',
+    roles: ['admin', 'production_manager', 'ppic'],
+    items: [
+      { href: '/work-orders', icon: 'clipboard-list', label: 'Work Order' },
+      { href: '/schedules/compare', icon: 'activity', label: 'Perbandingan Jadwal', activePrefix: '/schedules' },
+    ],
+  },
+  {
+    label: 'Engine 2 — OEE',
+    roles: ['admin', 'production_manager', 'ppic', 'operator'],
+    items: [
+      { href: '/production-logs', icon: 'clipboard-list', label: 'Log Produksi', roles: ['admin', 'ppic', 'operator'] },
+      { href: '/oee/dashboard', icon: 'activity', label: 'OEE Dashboard', activePrefix: '/oee', roles: ['admin', 'production_manager', 'ppic'] },
+    ],
+  },
+  {
+    label: 'Engine 3 — Inventory',
+    roles: ['admin', 'ppic'],
+    items: [
+      { href: '/mrp', icon: 'package', label: 'Dashboard MRP' },
+    ],
+  },
+  {
+    label: 'Master Data',
+    roles: ['admin', 'ppic'],
+    items: [
+      { href: '/work-centers', icon: 'database', label: 'Work Center' },
+      { href: '/materials', icon: 'database', label: 'Material' },
+      { href: '/products', icon: 'database', label: 'Produk' },
+    ],
+  },
+]
+
+// Grup terlihat jika role user cocok dengan grup ATAU minimal satu item
+// di dalamnya (untuk grup campuran seperti "Engine 2 — OEE" yang berisi
+// item dengan roles berbeda-beda, mis. operator hanya lihat Log Produksi
+// tapi tidak OEE Dashboard).
+const visibleGroups = computed(() => {
+  if (!currentRole.value) return []
+  return NAV_GROUPS
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => (item.roles ?? group.roles).includes(currentRole.value)),
+    }))
+    .filter((group) => group.items.length > 0)
 })
 
 function isActive(prefix, exact = false) {
