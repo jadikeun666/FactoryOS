@@ -52,8 +52,22 @@
 body {
   background: var(--page-bg);
   transition: background-color 0.25s ease;
+  display: flex;
+  min-height: 100vh;
+  margin: 0;
 }
-
+#app {
+  flex: 1;
+  min-width: 0;
+}
+#sidebar-root {
+  flex-shrink: 0;
+}
+@media (max-width: 900px) {
+  #sidebar-root {
+    width: 0;
+  }
+}
 #theme-toggle-root {
   position: fixed;
   bottom: 1.25rem;
